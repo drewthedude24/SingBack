@@ -19,5 +19,19 @@ The live path uses React, TypeScript, Vite, FastAPI, SQLite, MediaRecorder, Web 
 
 - [Five-hour sprint plan](docs/SPRINT_PLAN.md)
 - [Integration contract](docs/INTEGRATION_CONTRACT.md)
+- [Prepared demo-song sources](assets/songs/SOURCES.md)
+
+## Prepared song catalog
+
+`assets/songs/manifest.json` contains five ten-second Pixabay vocal excerpts.
+Every song folder includes `full.wav`, `instrumental.wav`, and `vocals.wav`.
+The stems are prepared offline with Demucs; Demucs is not part of the live demo
+request path.
+
+Validate the catalog before integrating it with the backend:
+
+```bash
+python3 scripts/validate_song_assets.py
+```
 
 Implementation intentionally starts with one complete vertical slice before adding scoring sophistication, extra songs, or visual effects.
