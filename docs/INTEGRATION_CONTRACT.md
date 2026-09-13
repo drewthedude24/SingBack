@@ -154,6 +154,13 @@ Successful response:
 
 Raw vocal media is never exposed to another player before results and should normally remain private even afterward.
 
+### `POST /api/sessions/{sessionId}/next-player`
+
+Valid only from `NEXT_PLAYER`. Advances to `TURN_INTRO`, updates
+`currentPlayerId`, and returns the complete session view. The frontend calls
+this after its between-player handoff screen; it must not increment turn order
+locally.
+
 ### `POST /api/sessions/{sessionId}/finalize`
 
 Valid only when all recordings are ready. For the five-hour build this can be a synchronous request with a clear frontend timeout and one retry. It calculates or loads scores, requests optional AI feedback/narration, freezes reveal order, and returns phase `REVEAL`.
