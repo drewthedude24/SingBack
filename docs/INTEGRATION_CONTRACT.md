@@ -106,6 +106,7 @@ Response:
     "durationMs": 10000,
     "fullMixUrl": "/media/songs/demo_song/full.wav",
     "instrumentalUrl": "/media/songs/demo_song/instrumental.wav",
+    "referenceVocalUrl": "/media/songs/demo_song/vocals.wav",
     "expectedLyrics": "expected lyric phrase"
   },
   "players": [

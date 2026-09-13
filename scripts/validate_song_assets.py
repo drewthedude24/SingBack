@@ -50,8 +50,8 @@ def main() -> None:
 
         if song["durationMs"] != EXPECTED_DURATION_MS:
             fail(f"{song_id}: manifest duration must be 10000 ms")
-        if len(song["expectedLyrics"].split()) > 10:
-            fail(f"{song_id}: scoring phrase must contain at most 10 words")
+        if not song["expectedLyrics"].strip():
+            fail(f"{song_id}: expected lyrics are empty")
         lyric_lines = song.get("lyricLines", [])
         if not lyric_lines:
             fail(f"{song_id}: lyric cues are missing")

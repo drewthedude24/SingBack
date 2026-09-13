@@ -18,6 +18,7 @@ export interface SongPublic {
   durationMs: number;
   fullMixUrl: string;
   instrumentalUrl: string;
+  referenceVocalUrl: string;
   expectedLyrics: string;
   lyricLines: LyricLine[];
   ready: boolean;
@@ -41,6 +42,7 @@ export interface SessionSong {
   durationMs: number;
   fullMixUrl: string;
   instrumentalUrl: string;
+  referenceVocalUrl: string;
   expectedLyrics: string;
   lyricLines: LyricLine[];
 }

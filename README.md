@@ -41,6 +41,11 @@ The manifest also contains continuous 0–10 second lyric cues. Reference vocal
 features are cached when a round begins, so each player reuses the same original
 pitch, rhythm, and waveform analysis during scoring.
 
+The lyric text and timing are generated once from the isolated reference stems
+with ElevenLabs Scribe and reused instantly during gameplay. Run
+`python scripts/transcribe_reference_lyrics.py --write` whenever a prepared clip
+changes.
+
 Validate the catalog before integrating it with the backend:
 
 ```bash

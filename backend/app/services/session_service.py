@@ -260,6 +260,7 @@ class SessionService:
                 durationMs=state.song.duration_ms,
                 fullMixUrl=state.song.full_mix_url,
                 instrumentalUrl=f"/media/songs/{state.song.id}/instrumental.wav",
+                referenceVocalUrl=f"/media/songs/{state.song.id}/vocals.wav",
                 expectedLyrics=state.song.expected_lyrics,
                 lyricLines=state.song.lyric_lines,
             ),

@@ -7,7 +7,6 @@
 export class InstrumentalPlayer {
   private readonly context: AudioContext;
   private readonly buffers = new Map<string, AudioBuffer>();
-  private readonly analyserNode: AnalyserNode;
   private readonly outputGain: GainNode;
   private currentSource: AudioBufferSourceNode | null = null;
 
@@ -18,16 +17,9 @@ export class InstrumentalPlayer {
       throw new Error("This browser does not support the Web Audio API.");
     }
     this.context = new AudioContextCtor();
-    this.analyserNode = this.context.createAnalyser();
-    this.analyserNode.fftSize = 1024;
     this.outputGain = this.context.createGain();
     this.outputGain.gain.value = 0.72;
-    this.analyserNode.connect(this.outputGain);
     this.outputGain.connect(this.context.destination);
-  }
-
-  getAnalyser(): AnalyserNode {
-    return this.analyserNode;
   }
 
   async resume(): Promise<void> {
@@ -62,7 +54,7 @@ export class InstrumentalPlayer {
     const source = this.context.createBufferSource();
     this.currentSource = source;
     source.buffer = buffer;
-    source.connect(this.analyserNode);
+    source.connect(this.outputGain);
     const onEnded = new Promise<void>((resolve) => {
       source.addEventListener(
         "ended",

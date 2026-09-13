@@ -47,7 +47,6 @@ interface GameEngine {
   currentPlayer: PlayerPublic | null;
   nextPlayerForHandoff: PlayerPublic | null;
   recorderAnalyser: AnalyserNode | null;
-  songAnalyser: AnalyserNode | null;
   getPlaybackClockSec: () => number;
   turnClock: { startAudioSec: number; durationMs: number } | null;
 
@@ -92,7 +91,6 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
   const [error, setError] = useState<EngineError | null>(null);
   const [busy, setBusy] = useState(false);
   const [recorderAnalyser, setRecorderAnalyser] = useState<AnalyserNode | null>(null);
-  const [songAnalyser, setSongAnalyser] = useState<AnalyserNode | null>(null);
   const [turnClock, setTurnClock] = useState<{
     startAudioSec: number;
     durationMs: number;
@@ -107,7 +105,6 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
   function getAudioEngine(): InstrumentalPlayer {
     if (!audioEngineRef.current) {
       audioEngineRef.current = new InstrumentalPlayer();
-      setSongAnalyser(audioEngineRef.current.getAnalyser());
     }
     return audioEngineRef.current;
   }
@@ -448,7 +445,6 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
     currentPlayer,
     nextPlayerForHandoff,
     recorderAnalyser,
-    songAnalyser,
     getPlaybackClockSec,
     turnClock,
     enableMicrophone,

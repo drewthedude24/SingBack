@@ -12,10 +12,28 @@
     "fullMixUrl": "/media/songs/best-thing/full.wav",
     "instrumentalPath": "assets/songs/best-thing/instrumental.wav",
     "referenceVocalPath": "assets/songs/best-thing/vocals.wav",
-    "expectedLyrics": "I don't wanna be crying tears, they won't bring you",
+    "expectedLyrics": "I don't wanna be crying tears. They won't bring you here. I want this game to be over. I want",
     "lyricLines": [
-      { "startMs": 0, "endMs": 4600, "text": "I don't wanna be crying tears," },
-      { "startMs": 4600, "endMs": 10000, "text": "they won't bring you" }
+      {
+        "startMs": 0,
+        "endMs": 3250,
+        "text": "I don't wanna be crying tears. They"
+      },
+      {
+        "startMs": 3250,
+        "endMs": 6409,
+        "text": "won't bring you here. I want this"
+      },
+      {
+        "startMs": 6409,
+        "endMs": 8980,
+        "text": "game to be over."
+      },
+      {
+        "startMs": 8980,
+        "endMs": 10000,
+        "text": "I want"
+      }
     ],
     "bpm": null,
     "key": null
@@ -33,9 +51,23 @@
     "fullMixUrl": "/media/songs/good-to-you/full.wav",
     "instrumentalPath": "assets/songs/good-to-you/instrumental.wav",
     "referenceVocalPath": "assets/songs/good-to-you/vocals.wav",
-    "expectedLyrics": "You aren't even worth it",
+    "expectedLyrics": "You aren't even worth it. You aren't even worth it. I been good to you",
     "lyricLines": [
-      { "startMs": 0, "endMs": 10000, "text": "You aren't even worth it" }
+      {
+        "startMs": 0,
+        "endMs": 2800,
+        "text": "You aren't even worth it."
+      },
+      {
+        "startMs": 2800,
+        "endMs": 5990,
+        "text": "You aren't even worth it."
+      },
+      {
+        "startMs": 5990,
+        "endMs": 10000,
+        "text": "I been good to you"
+      }
     ],
     "bpm": null,
     "key": null
@@ -53,9 +85,18 @@
     "fullMixUrl": "/media/songs/one-such-a-night/full.wav",
     "instrumentalPath": "assets/songs/one-such-a-night/instrumental.wav",
     "referenceVocalPath": "assets/songs/one-such-a-night/vocals.wav",
-    "expectedLyrics": "Oh, like smitten by the moonlight",
+    "expectedLyrics": "Like smitten by the moonlight, we shared that prayer",
     "lyricLines": [
-      { "startMs": 0, "endMs": 10000, "text": "Oh, like smitten by the moonlight" }
+      {
+        "startMs": 0,
+        "endMs": 7639,
+        "text": "Like smitten by the moonlight,"
+      },
+      {
+        "startMs": 7639,
+        "endMs": 10000,
+        "text": "we shared that prayer"
+      }
     ],
     "bpm": null,
     "key": null
@@ -73,10 +114,23 @@
     "fullMixUrl": "/media/songs/summer-day/full.wav",
     "instrumentalPath": "assets/songs/summer-day/instrumental.wav",
     "referenceVocalPath": "assets/songs/summer-day/vocals.wav",
-    "expectedLyrics": "Oh, summer day, with you I just wanna stay",
+    "expectedLyrics": "Ooh, ooh, summer day. With you, I just wanna stay. When the seasons",
     "lyricLines": [
-      { "startMs": 0, "endMs": 4800, "text": "Oh, summer day," },
-      { "startMs": 4800, "endMs": 10000, "text": "with you I just wanna stay" }
+      {
+        "startMs": 0,
+        "endMs": 5170,
+        "text": "Ooh, ooh, summer day."
+      },
+      {
+        "startMs": 5170,
+        "endMs": 8750,
+        "text": "With you, I just wanna stay."
+      },
+      {
+        "startMs": 8750,
+        "endMs": 10000,
+        "text": "When the seasons"
+      }
     ],
     "bpm": null,
     "key": null
@@ -94,10 +148,33 @@
     "fullMixUrl": "/media/songs/too-sad-to-cry/full.wav",
     "instrumentalPath": "assets/songs/too-sad-to-cry/instrumental.wav",
     "referenceVocalPath": "assets/songs/too-sad-to-cry/vocals.wav",
-    "expectedLyrics": "Too old to care and too young to die",
+    "expectedLyrics": "Too old to care and too young to die and too hurt to heal and too sad to cry. Mmm. And too hurt to heal and too",
     "lyricLines": [
-      { "startMs": 0, "endMs": 5000, "text": "Too old to care" },
-      { "startMs": 5000, "endMs": 10000, "text": "and too young to die" }
+      {
+        "startMs": 0,
+        "endMs": 2700,
+        "text": "Too old to care and too young"
+      },
+      {
+        "startMs": 2700,
+        "endMs": 4500,
+        "text": "to die and too hurt to heal"
+      },
+      {
+        "startMs": 4500,
+        "endMs": 6229,
+        "text": "and too sad to cry."
+      },
+      {
+        "startMs": 6229,
+        "endMs": 7880,
+        "text": "Mmm."
+      },
+      {
+        "startMs": 7880,
+        "endMs": 10000,
+        "text": "And too hurt to heal and too"
+      }
     ],
     "bpm": null,
     "key": null

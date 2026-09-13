@@ -35,6 +35,7 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
     assert session["currentPlayerId"] == players[0]["id"]
     assert session["song"]["expectedLyrics"]
     assert session["song"]["instrumentalUrl"].endswith("/instrumental.wav")
+    assert session["song"]["referenceVocalUrl"].endswith("/vocals.wav")
 
     narration = client.get(f"/api/sessions/{session_id}/narration/listen")
     assert narration.status_code == 200

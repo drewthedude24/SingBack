@@ -53,9 +53,13 @@ function formatTime(milliseconds: number): string {
 export function PerformanceEvidenceChart({
   evidence,
   currentMs,
+  description = "Waveform = loudness · line = detected pitch (octave-aligned)",
+  playerLabel = "Your vocal",
 }: {
   evidence: PerformanceEvidence;
   currentMs: number;
+  description?: string;
+  playerLabel?: string;
 }): JSX.Element {
   const pitchRange = useMemo(() => {
     const values = [...evidence.referencePitchMidi, ...evidence.playerPitchMidi].filter(
@@ -87,7 +91,7 @@ export function PerformanceEvidenceChart({
     <figure className="performance-evidence">
       <figcaption>
         <strong>What the grader heard</strong>
-        <span>Waveform = loudness · line = detected pitch (octave-aligned)</span>
+        <span>{description}</span>
       </figcaption>
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -97,7 +101,7 @@ export function PerformanceEvidenceChart({
         <rect x="0" y="35" width={WIDTH} height="106" rx="18" className="evidence-track-bg" />
         <rect x="0" y="167" width={WIDTH} height="106" rx="18" className="evidence-track-bg" />
         <text x="20" y="27" className="evidence-label evidence-reference-label">Original vocal</text>
-        <text x="20" y="159" className="evidence-label evidence-player-label">Your vocal</text>
+        <text x="20" y="159" className="evidence-label evidence-player-label">{playerLabel}</text>
         <path d={waveformPath(evidence.referenceWaveform, REFERENCE_CENTER)} className="evidence-waveform-reference" />
         <path d={waveformPath(evidence.playerWaveform, PLAYER_CENTER)} className="evidence-waveform-player" />
         {referencePitchPaths.map((path, index) => (

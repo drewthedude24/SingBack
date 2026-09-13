@@ -94,3 +94,18 @@ response fields. All validation and game-state failures use the shared
 
 Only generated `mix.mp3` files are exposed under `/media/sessions`. Raw uploads
 and normalized vocals live under `runtime/private` and are not web-served.
+
+## Refreshing reference lyrics
+
+The committed manifest contains one-time ElevenLabs Scribe transcripts of each
+isolated ten-second reference vocal. To refresh them after changing song clips:
+
+```bash
+python scripts/transcribe_reference_lyrics.py          # preview only
+python scripts/transcribe_reference_lyrics.py --write  # update the manifest
+python scripts/validate_song_assets.py
+```
+
+This runs during song preparation rather than during each game. It uses the root
+`ELEVENLABS_API_KEY`, never edits `.env`, and writes continuous word-timed lyric
+cues covering the complete 0–10 second clip.

@@ -19,5 +19,6 @@ page before any public release outside the hackathon demo.
 | `summer-day` | Summer Day | lyriscinsilence | [Pixabay](https://pixabay.com/music/rnb-summer-day-375508/) | 8,535 | 01:54.480 |
 | `too-sad-to-cry` | Too Sad to Cry | ctan28 | [Pixabay](https://pixabay.com/music/pop-too-sad-to-cry-339673/) | 16,720 | 00:39.360 |
 
-The manifest stores only a short scoring phrase for each clip. Treat it as a
-demo scoring target, not as a complete or authoritative lyric transcript.
+The manifest stores a one-time ElevenLabs Scribe transcript and continuous
+word-timed cues for each isolated ten-second vocal stem. These are the demo
+scoring targets; review them manually if a prepared clip changes.

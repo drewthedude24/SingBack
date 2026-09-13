@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
+import { mediaUrl } from "../api/client";
+import { LiveRecordingEvidence } from "../components/LiveRecordingEvidence";
 import { LyricDisplay } from "../components/LyricDisplay";
-import { Waveform } from "../components/Waveform";
 import { useGame } from "../game/GameProvider";
 
 export function RecordingScreen(): JSX.Element {
@@ -10,7 +11,6 @@ export function RecordingScreen(): JSX.Element {
     currentPlayer,
     stopRecordingEarly,
     recorderAnalyser,
-    songAnalyser,
     getPlaybackClockSec,
     turnClock,
   } = useGame();
@@ -39,16 +39,14 @@ export function RecordingScreen(): JSX.Element {
       <p className="tagline">The instrumental is playing. Recording stops automatically when it ends.</p>
       {session ? <LyricDisplay lines={session.song.lyricLines} currentMs={elapsedMs} /> : null}
 
-      <div className="waveform-pair">
-        <div className="waveform-slot">
-          <span className="waveform-label">Instrumental</span>
-          <Waveform analyser={songAnalyser} color="#35e2c9" />
-        </div>
-        <div className="waveform-slot">
-          <span className="waveform-label">Your live voice</span>
-          <Waveform analyser={recorderAnalyser} color="#ff5da2" />
-        </div>
-      </div>
+      {session ? (
+        <LiveRecordingEvidence
+          referenceVocalUrl={mediaUrl(session.song.referenceVocalUrl)}
+          analyser={recorderAnalyser}
+          currentMs={elapsedMs}
+          durationMs={session.song.durationMs}
+        />
+      ) : null}
 
       <div className="clip-progress" role="progressbar" aria-valuenow={Math.round(progress)}>
         <div className="clip-progress-track">

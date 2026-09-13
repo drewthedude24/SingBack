@@ -52,6 +52,7 @@ class SongPublic(ApiModel):
     duration_ms: int = Field(alias="durationMs")
     full_mix_url: str = Field(alias="fullMixUrl")
     instrumental_url: str = Field(alias="instrumentalUrl")
+    reference_vocal_url: str = Field(alias="referenceVocalUrl")
     expected_lyrics: str = Field(alias="expectedLyrics")
     lyric_lines: list[LyricLine] = Field(alias="lyricLines")
     ready: bool
@@ -63,6 +64,7 @@ class SessionSong(ApiModel):
     duration_ms: int = Field(alias="durationMs")
     full_mix_url: str = Field(alias="fullMixUrl")
     instrumental_url: str = Field(alias="instrumentalUrl")
+    reference_vocal_url: str = Field(alias="referenceVocalUrl")
     expected_lyrics: str = Field(alias="expectedLyrics")
     lyric_lines: list[LyricLine] = Field(alias="lyricLines")
 

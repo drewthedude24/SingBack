@@ -25,7 +25,7 @@ The sprint has one rule: protect the end-to-end game loop before improving any i
 - Online rooms, accounts, matchmaking, and cloud deployment
 - Live Demucs separation; all stems must be prepared before the sprint
 - Five production-ready songs; ship one verified song and leave manifest slots for the rest
-- Presage, Voice Changer, Karaoke Mode, High Stakes Mode, and word-by-word lyric timing
+- Presage, Voice Changer, Karaoke Mode, and High Stakes Mode
 - WebSockets, background job infrastructure, and a production ORM migration system
 - Perfect recovery after a browser refresh during an active recording
 - Elaborate pitch graphs, animations, leaderboards, and mobile-first polish
@@ -114,7 +114,7 @@ Checkpoint 3 passes when one live and two prepared recordings produce three mixe
 - Backend sends each raw/converted vocal to ElevenLabs Scribe and maps word timestamps into lyric recall.
 - Backend sends only measured metrics and transcript data to Gemini and validates structured output.
 - Use cached host audio or text narration for fixed transitions; generate only the final winner line dynamically if reliable.
-- Frontend plays every anonymized remix before opening its grade.
+- Frontend shows the completed AI-supported grade immediately with optional remix playback.
 - Backend returns the technical winner after all reveals are acknowledged.
 
 Checkpoint 4 passes with keys enabled and disabled. Both runs must reach results. Commit the integration adapters and their fallbacks together.
