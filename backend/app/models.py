@@ -17,8 +17,13 @@ class Phase(StrEnum):
     NEXT_PLAYER = "NEXT_PLAYER"
     PROCESSING = "PROCESSING"
     REVEAL = "REVEAL"
-    VOTING = "VOTING"
     RESULTS = "RESULTS"
+
+
+class LyricLine(ApiModel):
+    start_ms: int = Field(alias="startMs", ge=0)
+    end_ms: int = Field(alias="endMs", gt=0)
+    text: str
 
 
 class SongManifestEntry(ApiModel):
@@ -35,6 +40,7 @@ class SongManifestEntry(ApiModel):
     instrumental_path: str = Field(alias="instrumentalPath")
     reference_vocal_path: str = Field(alias="referenceVocalPath")
     expected_lyrics: str = Field(alias="expectedLyrics")
+    lyric_lines: list[LyricLine] = Field(alias="lyricLines", default_factory=list)
     bpm: float | None = None
     key: str | None = None
 
@@ -47,6 +53,7 @@ class SongPublic(ApiModel):
     full_mix_url: str = Field(alias="fullMixUrl")
     instrumental_url: str = Field(alias="instrumentalUrl")
     expected_lyrics: str = Field(alias="expectedLyrics")
+    lyric_lines: list[LyricLine] = Field(alias="lyricLines")
     ready: bool
 
 
@@ -57,6 +64,7 @@ class SessionSong(ApiModel):
     full_mix_url: str = Field(alias="fullMixUrl")
     instrumental_url: str = Field(alias="instrumentalUrl")
     expected_lyrics: str = Field(alias="expectedLyrics")
+    lyric_lines: list[LyricLine] = Field(alias="lyricLines")
 
 
 class PlayerPublic(ApiModel):
@@ -138,22 +146,9 @@ class RevealCompleteRequest(ApiModel):
     reveal_ids: list[str] = Field(alias="revealIds")
 
 
-class VoteRequest(ApiModel):
-    voter_player_id: str = Field(alias="voterPlayerId")
-    target_reveal_id: str = Field(alias="targetRevealId")
-
-
-class VoteResponse(ApiModel):
-    accepted: bool
-    votes_received: int = Field(alias="votesReceived")
-    votes_required: int = Field(alias="votesRequired")
-    phase: Phase
-
-
 class FinalPerformance(RevealPerformance):
     player_id: str = Field(alias="playerId")
     display_name: str = Field(alias="displayName")
-    votes: int
 
 
 class FinalResults(ApiModel):
@@ -161,7 +156,6 @@ class FinalResults(ApiModel):
     phase: Phase
     performances: list[FinalPerformance]
     technical_winner_player_id: str = Field(alias="technicalWinnerPlayerId")
-    crowd_favorite_player_id: str = Field(alias="crowdFavoritePlayerId")
 
 
 class NarrationCue(StrEnum):

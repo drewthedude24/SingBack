@@ -47,11 +47,12 @@ class AnalysisService:
     def _analyze_one(
         self, song: SongManifestEntry, artifact: AudioArtifact
     ) -> PerformanceAnalysis:
+        reference_vocal_path = self._reference_path_resolver(
+            song.reference_vocal_path
+        )
         transcript = self._elevenlabs.transcribe(artifact.vocal_path)
         score = self._scoring.score(
-            reference_vocal_path=self._reference_path_resolver(
-                song.reference_vocal_path
-            ),
+            reference_vocal_path=reference_vocal_path,
             player_vocal_path=artifact.vocal_path,
             expected_lyrics=song.expected_lyrics,
             detected_lyrics=transcript.text,
@@ -62,6 +63,7 @@ class AnalysisService:
             expected_lyrics=song.expected_lyrics,
             detected_lyrics=transcript.text,
             vocal_path=artifact.vocal_path,
+            reference_vocal_path=reference_vocal_path,
         )
         return PerformanceAnalysis(
             score=score,

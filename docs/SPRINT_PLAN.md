@@ -2,7 +2,7 @@
 
 ## Outcome
 
-At the five-hour mark, three named players can complete one local pass-and-play round without a page reload. Each player gets a playable remix, the reveal stays hidden until all turns finish, scores are repeatable, voting works, and the app still completes the round if Gemini or ElevenLabs fails.
+At the five-hour mark, three named players can complete one local pass-and-play round without a page reload. Each player gets a playable remix, the reveal stays hidden until all turns finish, scores are repeatable, and the app still completes the round if Gemini or ElevenLabs fails.
 
 The sprint has one rule: protect the end-to-end game loop before improving any individual subsystem.
 
@@ -12,7 +12,7 @@ The sprint has one rule: protect the end-to-end game loop before improving any i
 
 - One verified 10-second challenge with a full reference clip, instrumental stem, reference vocal stem, expected lyrics, and license/source record
 - One laptop, one browser, three players, and local pass-and-play
-- Lobby, listen-once, countdown, record, upload, processing, reveal, vote, and results states
+- Lobby, listen-once, countdown, record, upload, processing, reveal, and results states
 - Browser microphone recording scheduled against the Web Audio clock
 - FastAPI upload, FFmpeg conversion/alignment/mixing, SQLite persistence, and media serving
 - Measured component scores with explicit confidence or unavailable states
@@ -41,7 +41,7 @@ Owns `frontend/`.
 - Create the React TypeScript Vite app and the screen shell.
 - Put all game transitions in one reducer or state-machine module.
 - Implement microphone permission, MediaRecorder capture, Web Audio scheduling, and timing metadata.
-- Integrate the typed API client, playback, reveal gating, voting, results, and clear error/retry states.
+- Integrate the typed API client, playback, reveal gating, results, and clear error/retry states.
 - Never calculate authoritative scores or session rules in React.
 
 ### Teammate B Backend Database and External APIs
@@ -49,8 +49,8 @@ Owns `frontend/`.
 Owns `backend/app/api/`, `backend/app/db/`, `backend/app/integrations/`, and `.env.example`.
 
 - Create FastAPI, CORS for local development, settings, health checks, and structured errors.
-- Implement SQLite repositories for sessions, players, recordings, scores, and votes.
-- Enforce state, turn order, safe filenames, MIME/size limits, reveal gating, and no self-voting.
+- Implement SQLite repositories for sessions, players, recordings, and scores.
+- Enforce state, turn order, safe filenames, MIME/size limits, and reveal gating.
 - Add Gemini and ElevenLabs adapters behind interfaces with timeouts and deterministic fallbacks.
 - Keep every secret on the backend.
 
@@ -109,13 +109,13 @@ Checkpoint 2 passes only when a fresh browser recording travels through the real
 
 Checkpoint 3 passes when one live and two prepared recordings produce three mixes and three deterministic result objects, and the frontend cannot reveal them early.
 
-### 3:10 to 4:00 Sponsor Integrations Voting and Results
+### 3:10 to 4:00 Sponsor Integrations and Results
 
 - Backend sends each raw/converted vocal to ElevenLabs Scribe and maps word timestamps into lyric recall.
 - Backend sends only measured metrics and transcript data to Gemini and validates structured output.
 - Use cached host audio or text narration for fixed transitions; generate only the final winner line dynamically if reliable.
-- Frontend plays every anonymized remix before enabling voting.
-- Backend rejects self-votes and returns technical winner plus crowd favorite.
+- Frontend plays every anonymized remix before opening its grade.
+- Backend returns the technical winner after all reveals are acknowledged.
 
 Checkpoint 4 passes with keys enabled and disabled. Both runs must reach results. Commit the integration adapters and their fallbacks together.
 
@@ -138,7 +138,7 @@ Checkpoint 5 passes when a teammate who did not build the frontend can launch th
 5. Repeat for three players
 6. Deterministic scores and reveal gating
 7. Gemini and ElevenLabs adapters with fallbacks
-8. Voting and results
+8. Results
 9. Failure states and demo rehearsal
 
 This order is intentional. Database completeness, scoring sophistication, and sponsor polish cannot precede the real recording-to-remix loop.
@@ -158,7 +158,7 @@ Recommended checkpoint commit subjects:
 - `feat: connect lobby to session API`
 - `feat: complete recording to remix vertical slice`
 - `feat: finish three player reveal and scoring`
-- `feat: add resilient AI feedback and voting`
+- `feat: add resilient AI feedback and results`
 - `fix: harden and rehearse hackathon demo`
 
 ## Acceptance Test
@@ -174,8 +174,8 @@ The MVP is done when all of the following are true:
 - Scores contain bounded numeric values or explicit unavailable states, never NaN.
 - Gemini feedback cannot change numeric scores.
 - The round completes without Gemini or ElevenLabs credentials.
-- Voting starts only after every remix has played, and self-voting is rejected.
-- Results name a technical winner and crowd favorite.
+- Grading opens only after every remix has played.
+- Results name a technical winner.
 
 ## Demo Script
 
@@ -186,7 +186,7 @@ The MVP is done when all of the following are true:
 5. Use the prepared recordings for the other two turns.
 6. Reveal all three remixes and the measured score breakdown.
 7. Show Gemini feedback and play an ElevenLabs host line.
-8. Cast the crowd vote and end on both winners.
+8. End on the technical winner and Gemini coaching.
 
 ## Immediate Preflight Questions
 

@@ -115,36 +115,18 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
     )
 
     reveal_ids = [item["revealId"] for item in reveal["performances"]]
-    voting = client.post(
+    completed = client.post(
         f"/api/sessions/{session_id}/reveal-complete",
         json={"revealIds": reveal_ids},
     )
-    assert voting.json()["phase"] == "VOTING"
-
-    internal = client.app.state.session_service.get(session_id)
-    reveal_for_player = {
-        player_id: f"reveal_{index + 1}"
-        for index, player_id in enumerate(internal.reveal_order)
-    }
-    for index, player in enumerate(players):
-        target_player = players[(index + 1) % len(players)]
-        vote = client.post(
-            f"/api/sessions/{session_id}/votes",
-            json={
-                "voterPlayerId": player["id"],
-                "targetRevealId": reveal_for_player[target_player["id"]],
-            },
-        )
-        assert vote.status_code == 200
+    assert completed.json()["phase"] == "RESULTS"
 
     final = client.get(f"/api/sessions/{session_id}/results/final")
     assert final.status_code == 200
     results = final.json()
     assert results["phase"] == "RESULTS"
     assert len(results["performances"]) == 3
-    assert sum(item["votes"] for item in results["performances"]) == 3
     assert results["technicalWinnerPlayerId"] in {player["id"] for player in players}
-    assert results["crowdFavoritePlayerId"] in {player["id"] for player in players}
 
     final_narration = client.get(f"/api/sessions/{session_id}/narration/results")
     assert final_narration.status_code == 200

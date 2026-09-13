@@ -4,7 +4,7 @@ A React + TypeScript + Vite client for the SingBack MVP. It implements the full
 game loop against the FastAPI backend described in
 [`backend/README.md`](../backend/README.md) and
 [`docs/INTEGRATION_CONTRACT.md`](../docs/INTEGRATION_CONTRACT.md): lobby, one-play
-listen, per-player countdown/record/upload, reveal, voting, and results.
+listen, per-player countdown/record/upload, graded reveal, and results.
 
 ## Run locally
 

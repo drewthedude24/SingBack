@@ -48,6 +48,12 @@ export function LobbyScreen(): JSX.Element {
     );
   }
 
+  function selectRandomSong() {
+    if (readySongs.length === 0) return;
+    const nextIndex = Math.floor(Math.random() * readySongs.length);
+    setSongId(readySongs[nextIndex].id);
+  }
+
   return (
     <section className="screen lobby-screen">
       <h1>Lobby</h1>
@@ -72,7 +78,17 @@ export function LobbyScreen(): JSX.Element {
         </fieldset>
 
         <fieldset>
-          <legend>Song</legend>
+          <div className="fieldset-heading">
+            <legend>Song</legend>
+            <button
+              type="button"
+              className="secondary-button compact-button"
+              onClick={selectRandomSong}
+              disabled={readySongs.length === 0}
+            >
+              Surprise me
+            </button>
+          </div>
           {songsLoading && <p>Loading songs...</p>}
           {!songsLoading && readySongs.length === 0 && (
             <p className="field-error">

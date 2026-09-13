@@ -14,8 +14,6 @@ from backend.app.models import (
     RevealCompleteRequest,
     RevealResults,
     SessionView,
-    VoteRequest,
-    VoteResponse,
 )
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -167,15 +165,6 @@ def reveal_complete(
 ) -> SessionView:
     return request.app.state.session_service.complete_reveal(
         session_id, payload.reveal_ids
-    )
-
-
-@router.post(
-    "/{session_id}/votes", response_model=VoteResponse, response_model_by_alias=True
-)
-def cast_vote(session_id: str, payload: VoteRequest, request: Request) -> VoteResponse:
-    return request.app.state.session_service.vote(
-        session_id, payload.voter_player_id, payload.target_reveal_id
     )
 
 

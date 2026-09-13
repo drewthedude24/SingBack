@@ -174,12 +174,17 @@ class ScoringService:
                 else reference.confidence
             )
             return None, confidence, None
-        reference_contour = reference.contour - np.median(reference.contour)
-        player_contour = player.contour - np.median(player.contour)
+        # Treat octave-equivalent singing as valid for different vocal ranges,
+        # but retain all other register/key error. The previous median-centering
+        # made a melody sung in any wrong key score as perfect.
+        pitch_offset = float(np.median(player.contour) - np.median(reference.contour))
+        octave_adjustment = round(pitch_offset / 12.0) * 12.0
+        reference_contour = reference.contour
+        player_contour = player.contour - octave_adjustment
         cost = np.abs(reference_contour[:, None] - player_contour[None, :])
         _, path = librosa.sequence.dtw(C=cost, backtrack=True)
         mean_error = float(np.mean(cost[path[:, 0], path[:, 1]]))
-        score = float(np.clip(100.0 - 15.0 * mean_error, 0.0, 100.0))
+        score = float(np.clip(100.0 - 10.0 * mean_error, 0.0, 100.0))
         confidence = (
             "ok"
             if reference.confidence == "ok" and player.confidence == "ok"
@@ -206,10 +211,17 @@ class ScoringService:
     ) -> tuple[float | None, str, float | None]:
         if len(reference) < 2 or len(player) < 2:
             return None, "insufficient_onsets", None
-        cost = np.abs(reference[:, None] - player[None, :])
+        # Compare the spacing between phrases rather than absolute onset time;
+        # this avoids punishing a small recording-device latency twice.
+        reference_intervals = np.diff(reference)
+        player_intervals = np.diff(player)
+        cost = np.abs(reference_intervals[:, None] - player_intervals[None, :])
         _, path = librosa.sequence.dtw(C=cost, backtrack=True)
         mean_error_seconds = float(np.mean(cost[path[:, 0], path[:, 1]]))
-        score = float(np.clip(100.0 * math.exp(-mean_error_seconds / 0.35), 0, 100))
+        coverage = min(len(reference), len(player)) / max(len(reference), len(player))
+        score = float(
+            np.clip(100.0 * math.exp(-mean_error_seconds / 0.4) * coverage, 0, 100)
+        )
         confidence = "ok" if len(reference) >= 3 and len(player) >= 3 else "low"
         return score, confidence, mean_error_seconds * 1000
 
@@ -217,7 +229,8 @@ class ScoringService:
     def _completion(reference_seconds: float, player_seconds: float) -> float:
         if reference_seconds <= 0:
             return 0.0
-        return float(np.clip(100.0 * player_seconds / reference_seconds, 0, 100))
+        ratio = max(player_seconds / reference_seconds, 1e-6)
+        return float(np.clip(100.0 * min(ratio, 1.0 / ratio), 0, 100))
 
     @classmethod
     def _lyric_score(

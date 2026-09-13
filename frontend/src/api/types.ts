@@ -9,7 +9,6 @@ export type Phase =
   | "NEXT_PLAYER"
   | "PROCESSING"
   | "REVEAL"
-  | "VOTING"
   | "RESULTS";
 
 export interface SongPublic {
@@ -20,7 +19,14 @@ export interface SongPublic {
   fullMixUrl: string;
   instrumentalUrl: string;
   expectedLyrics: string;
+  lyricLines: LyricLine[];
   ready: boolean;
+}
+
+export interface LyricLine {
+  startMs: number;
+  endMs: number;
+  text: string;
 }
 
 export interface PlayerPublic {
@@ -36,6 +42,7 @@ export interface SessionSong {
   fullMixUrl: string;
   instrumentalUrl: string;
   expectedLyrics: string;
+  lyricLines: LyricLine[];
 }
 
 export interface SessionView {
@@ -92,17 +99,9 @@ export interface RevealResults {
   performances: RevealPerformance[];
 }
 
-export interface VoteResponse {
-  accepted: boolean;
-  votesReceived: number;
-  votesRequired: number;
-  phase: Phase;
-}
-
 export interface FinalPerformance extends RevealPerformance {
   playerId: string;
   displayName: string;
-  votes: number;
 }
 
 export interface FinalResults {
@@ -110,7 +109,6 @@ export interface FinalResults {
   phase: Phase;
   performances: FinalPerformance[];
   technicalWinnerPlayerId: string;
-  crowdFavoritePlayerId: string;
 }
 
 export interface HealthStatus {

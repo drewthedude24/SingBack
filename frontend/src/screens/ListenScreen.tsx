@@ -1,7 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { mediaUrl } from "../api/client";
 import { HostNarration } from "../components/HostNarration";
+import { LyricDisplay } from "../components/LyricDisplay";
 import { LyricsPrompt } from "../components/LyricsPrompt";
 import { useGame } from "../game/GameProvider";
 
@@ -10,6 +11,19 @@ export function ListenScreen(): JSX.Element | null {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [played, setPlayed] = useState(false);
   const [ended, setEnded] = useState(false);
+  const [currentMs, setCurrentMs] = useState(0);
+
+  useEffect(() => {
+    if (!played || ended) return;
+    let frameId = 0;
+    const tick = () => {
+      const audio = audioRef.current;
+      if (audio) setCurrentMs(audio.currentTime * 1000);
+      frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [played, ended]);
 
   if (!session) return null;
 
@@ -29,7 +43,7 @@ export function ListenScreen(): JSX.Element | null {
       <h1>{session.song.title}</h1>
       <p className="tagline">You only get one play. Everyone should be listening now.</p>
       <HostNarration sessionId={session.id} cue="listen" />
-      <LyricsPrompt lyrics={session.song.expectedLyrics} />
+      {!played ? <LyricsPrompt lyrics={session.song.expectedLyrics} /> : null}
 
       <audio ref={audioRef} src={mediaUrl(session.song.fullMixUrl)} onEnded={handleEnded} />
 
@@ -38,7 +52,12 @@ export function ListenScreen(): JSX.Element | null {
           Play Reference Clip
         </button>
       )}
-      {played && !ended && <p className="playing-indicator">Playing the reference clip...</p>}
+      {played && !ended ? (
+        <>
+          <p className="playing-indicator">Playing the reference clip...</p>
+          <LyricDisplay lines={session.song.lyricLines} currentMs={currentMs} />
+        </>
+      ) : null}
       {ended && <p className="playing-indicator">Starting the first turn...</p>}
     </section>
   );

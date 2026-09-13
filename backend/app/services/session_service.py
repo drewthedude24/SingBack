@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 import threading
-from collections import Counter
 from dataclasses import dataclass, field
 from uuid import uuid4
 
@@ -21,7 +20,6 @@ from backend.app.models import (
     SessionSong,
     SessionView,
     SongManifestEntry,
-    VoteResponse,
 )
 from backend.app.services.audio_service import AudioArtifact
 from backend.app.services.analysis_service import AnalysisService, PerformanceAnalysis
@@ -46,7 +44,6 @@ class SessionState:
     recordings: dict[str, RecordingState] = field(default_factory=dict)
     reveal_order: list[str] = field(default_factory=list)
     acknowledged_reveals: set[str] = field(default_factory=set)
-    votes: dict[str, str] = field(default_factory=dict)
 
 
 class SessionService:
@@ -195,41 +192,14 @@ class SessionService:
                     "Acknowledge every revealed performance exactly once.",
                 )
             state.acknowledged_reveals = expected
-            state.phase = Phase.VOTING
+            state.phase = Phase.RESULTS
             return self.view(state)
-
-    def vote(
-        self, session_id: str, voter_player_id: str, target_reveal_id: str
-    ) -> VoteResponse:
-        with self._lock:
-            state = self.get(session_id)
-            self._require_phase(state, Phase.VOTING)
-            player_ids = {player.id for player in state.players}
-            if voter_player_id not in player_ids:
-                raise ApiError(
-                    404, "PLAYER_NOT_FOUND", "The voting player does not exist."
-                )
-            if voter_player_id in state.votes:
-                raise ApiError(409, "DUPLICATE_VOTE", "This player has already voted.")
-            target_player_id = self._player_id_for_reveal(state, target_reveal_id)
-            if voter_player_id == target_player_id:
-                raise ApiError(409, "SELF_VOTE", "Players cannot vote for themselves.")
-            state.votes[voter_player_id] = target_player_id
-            if len(state.votes) == len(state.players):
-                state.phase = Phase.RESULTS
-            return VoteResponse(
-                accepted=True,
-                votesReceived=len(state.votes),
-                votesRequired=len(state.players),
-                phase=state.phase,
-            )
 
     def final_results(self, session_id: str) -> FinalResults:
         state = self.get(session_id)
         self._require_phase(state, Phase.RESULTS)
-        vote_counts = Counter(state.votes.values())
         performances: list[FinalPerformance] = []
-        for index, player_id in enumerate(state.reveal_order):
+        for player_id in state.reveal_order:
             reveal = self._reveal_performance(state, player_id)
             player = next(player for player in state.players if player.id == player_id)
             performances.append(
@@ -237,7 +207,6 @@ class SessionService:
                     **reveal.model_dump(by_alias=True),
                     playerId=player.id,
                     displayName=player.display_name,
-                    votes=vote_counts[player_id],
                 )
             )
         technical_winner = max(
@@ -246,16 +215,11 @@ class SessionService:
                 self._score_for(state.recordings[player.id]).technical_total
             ),
         )
-        crowd_favorite = max(
-            state.players,
-            key=lambda player: (vote_counts[player.id], -player.turn_order),
-        )
         return FinalResults(
             sessionId=state.id,
             phase=state.phase,
             performances=performances,
             technicalWinnerPlayerId=technical_winner.id,
-            crowdFavoritePlayerId=crowd_favorite.id,
         )
 
     def narration_text(self, session_id: str, cue: NarrationCue) -> str:
@@ -278,20 +242,12 @@ class SessionService:
                 for player in state.players
                 if player.id == final.technical_winner_player_id
             )
-            crowd = next(
-                player
-                for player in state.players
-                if player.id == final.crowd_favorite_player_id
-            )
-            return (
-                f"{winner.display_name} wins the technical crown. "
-                f"{crowd.display_name} is the crowd favorite."
-            )
+            return f"{winner.display_name} wins the SingBack technical crown."
         raise ApiError(400, "INVALID_NARRATION_CUE", "The narration cue is unknown.")
 
     def view(self, state: SessionState) -> SessionView:
         current_player_id = None
-        if state.phase not in {Phase.REVEAL, Phase.VOTING, Phase.RESULTS}:
+        if state.phase not in {Phase.REVEAL, Phase.RESULTS}:
             current_player_id = state.players[state.current_player_index].id
         return SessionView(
             id=state.id,
@@ -303,6 +259,7 @@ class SessionService:
                 fullMixUrl=state.song.full_mix_url,
                 instrumentalUrl=f"/media/songs/{state.song.id}/instrumental.wav",
                 expectedLyrics=state.song.expected_lyrics,
+                lyricLines=state.song.lyric_lines,
             ),
             players=state.players,
             currentPlayerId=current_player_id,
@@ -380,17 +337,3 @@ class SessionService:
     @staticmethod
     def _reveal_id(index: int) -> str:
         return f"reveal_{index + 1}"
-
-    @staticmethod
-    def _player_id_for_reveal(state: SessionState, target_reveal_id: str) -> str:
-        if not target_reveal_id.startswith("reveal_"):
-            raise ApiError(404, "REVEAL_NOT_FOUND", "The reveal entry does not exist.")
-        try:
-            index = int(target_reveal_id.removeprefix("reveal_")) - 1
-            if index < 0:
-                raise IndexError
-            return state.reveal_order[index]
-        except (ValueError, IndexError) as exc:
-            raise ApiError(
-                404, "REVEAL_NOT_FOUND", "The reveal entry does not exist."
-            ) from exc

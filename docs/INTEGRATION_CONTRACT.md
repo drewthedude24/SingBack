@@ -2,7 +2,7 @@
 
 ## Contract Rules
 
-- The backend is authoritative for session phase, turn order, reveal readiness, scores, and vote validity.
+- The backend is authoritative for session phase, turn order, reveal readiness, and scores.
 - The frontend owns presentation and transient countdown/recording progress, but it requests every legal phase change through the API.
 - Audio and external APIs are services behind backend interfaces; routes do not contain FFmpeg, Librosa, Gemini, or ElevenLabs implementation details.
 - All timestamps in JSON use ISO 8601 UTC. All audio offsets and durations use integer milliseconds.
@@ -37,7 +37,7 @@ SingBack/
 ```text
 LOBBY -> LISTEN -> TURN_INTRO -> COUNTDOWN -> RECORDING -> UPLOADING
 UPLOADING -> NEXT_PLAYER -> TURN_INTRO
-UPLOADING -> PROCESSING -> REVEAL -> VOTING -> RESULTS
+UPLOADING -> PROCESSING -> REVEAL -> RESULTS
 any active phase -> ERROR -> last recoverable phase
 ```
 
@@ -124,7 +124,7 @@ Valid only from `LOBBY`. Returns the complete session view with phase `LISTEN`.
 
 Valid cues are `listen`, `turn`, `processing`, and `results`. Returns the host
 line as text in every case and an ElevenLabs-generated `audioUrl` when TTS is
-configured and succeeds. The results cue is valid only after voting completes.
+configured and succeeds. The results cue is valid only after reveal completes.
 
 ### `POST /api/sessions/{sessionId}/reference-complete`
 
@@ -219,24 +219,11 @@ The full score uses the PRD weights: 45% pitch, 25% rhythm, 20% lyrics, and 10% 
 
 ### `POST /api/sessions/{sessionId}/reveal-complete`
 
-Marks that every reveal entry played and advances to `VOTING`. The backend rejects the call unless every reveal ID was acknowledged.
-
-### `POST /api/sessions/{sessionId}/votes`
-
-Request:
-
-```json
-{
-  "voterPlayerId": "player_uuid",
-  "targetRevealId": "reveal_1"
-}
-```
-
-The backend maps reveal IDs to players privately and rejects duplicate votes, early votes, unknown IDs, and self-votes.
+Marks that every reveal entry played and advances directly to `RESULTS`. The backend rejects the call unless every reveal ID was acknowledged.
 
 ### `GET /api/sessions/{sessionId}/results/final`
 
-Returns identities, metric details, technical winner, crowd favorite, and optional host narration URL after voting is complete.
+Returns identities, metric details, the technical winner, and optional host narration URL after reveal is complete.
 
 ## Error Shape
 
@@ -273,9 +260,7 @@ Each result includes `status`, `durationMs`, and an error code when unavailable.
 - `players`: id, session_id, display_name, turn_order
 - `recordings`: id, player_id, raw_path, wav_path, mix_path, offset_ms, duration_ms, status
 - `scores`: player_id, pitch, rhythm, lyrics, completion, technical_total, confidence_json, feedback_json
-- `votes`: session_id, voter_player_id, target_player_id, created_at
-
-Use database constraints for unique turn order per session and one vote per voter. Use generated UUID filenames and resolve every media path under a configured media root before serving it.
+Use database constraints for unique turn order per session. Use generated UUID filenames and resolve every media path under a configured media root before serving it.
 
 ## Audio Timing Contract
 

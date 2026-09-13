@@ -9,7 +9,6 @@ import type {
   SessionSong,
   SessionView,
   SongPublic,
-  VoteResponse,
 } from "./types";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000").replace(
@@ -104,11 +103,6 @@ export const api = {
     request<SessionView>(
       `/api/sessions/${sessionId}/reveal-complete`,
       jsonInit("POST", { revealIds }),
-    ),
-  vote: (sessionId: string, voterPlayerId: string, targetRevealId: string) =>
-    request<VoteResponse>(
-      `/api/sessions/${sessionId}/votes`,
-      jsonInit("POST", { voterPlayerId, targetRevealId }),
     ),
   finalResults: (sessionId: string) =>
     request<FinalResults>(`/api/sessions/${sessionId}/results/final`),

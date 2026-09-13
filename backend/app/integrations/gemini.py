@@ -35,6 +35,7 @@ class GeminiFeedbackService:
         expected_lyrics: str,
         detected_lyrics: str | None,
         vocal_path: Path,
+        reference_vocal_path: Path,
     ) -> Feedback:
         if not self._api_key:
             return self._fallback(score)
@@ -49,9 +50,10 @@ class GeminiFeedbackService:
             }
             prompt = (
                 "You are the SingBack game-show vocal coach. Explain the supplied "
-                "deterministic measurements and briefly consider the attached raw vocal's "
-                "energy and delivery. Never create, revise, or contradict numeric scores. "
-                "Be specific, supportive, playful, and concise. Do not quote more lyrics "
+                "deterministic measurements. Compare the attached reference vocal and player "
+                "vocal for phrasing, confidence, and delivery. Never create, revise, or "
+                "contradict numeric scores. Cite concrete audible evidence, be supportive, "
+                "playful, and concise. Do not quote more lyrics "
                 "than the short phrases already supplied. Measurements:\n"
                 + json.dumps(measurements, separators=(",", ":"))
             )
@@ -60,6 +62,11 @@ class GeminiFeedbackService:
                 model=self._model,
                 contents=[
                     prompt,
+                    "Reference vocal:",
+                    types.Part.from_bytes(
+                        data=reference_vocal_path.read_bytes(), mime_type="audio/wav"
+                    ),
+                    "Player vocal:",
                     types.Part.from_bytes(
                         data=vocal_path.read_bytes(), mime_type="audio/wav"
                     ),

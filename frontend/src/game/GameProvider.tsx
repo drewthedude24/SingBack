@@ -40,15 +40,16 @@ interface GameEngine {
   revealResults: RevealResults | null;
   revealIndex: number;
   playedRevealIds: string[];
-  voterIndex: number;
-  voteMessage: string | null;
   finalResults: FinalResults | null;
   error: EngineError | null;
   busy: boolean;
 
   currentPlayer: PlayerPublic | null;
   nextPlayerForHandoff: PlayerPublic | null;
-  voter: PlayerPublic | null;
+  recorderAnalyser: AnalyserNode | null;
+  songAnalyser: AnalyserNode | null;
+  getPlaybackClockSec: () => number;
+  turnClock: { startAudioSec: number; durationMs: number } | null;
 
   enableMicrophone: () => Promise<void>;
   goToLobby: () => void;
@@ -60,8 +61,7 @@ interface GameEngine {
   continueAfterHandoff: () => Promise<void>;
   retryProcessing: () => Promise<void>;
   advanceReveal: () => void;
-  continueToVoting: () => Promise<void>;
-  castVote: (revealId: string) => Promise<void>;
+  finishReveal: () => Promise<void>;
   playAgain: () => void;
   dismissError: () => void;
 }
@@ -88,11 +88,15 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
   const [revealResults, setRevealResults] = useState<RevealResults | null>(null);
   const [revealIndex, setRevealIndex] = useState(0);
   const [playedRevealIds, setPlayedRevealIds] = useState<string[]>([]);
-  const [voterIndex, setVoterIndex] = useState(0);
-  const [voteMessage, setVoteMessage] = useState<string | null>(null);
   const [finalResults, setFinalResults] = useState<FinalResults | null>(null);
   const [error, setError] = useState<EngineError | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recorderAnalyser, setRecorderAnalyser] = useState<AnalyserNode | null>(null);
+  const [songAnalyser, setSongAnalyser] = useState<AnalyserNode | null>(null);
+  const [turnClock, setTurnClock] = useState<{
+    startAudioSec: number;
+    durationMs: number;
+  } | null>(null);
 
   const micStreamRef = useRef<MediaStream | null>(null);
   const audioEngineRef = useRef<InstrumentalPlayer | null>(null);
@@ -103,6 +107,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
   function getAudioEngine(): InstrumentalPlayer {
     if (!audioEngineRef.current) {
       audioEngineRef.current = new InstrumentalPlayer();
+      setSongAnalyser(audioEngineRef.current.getAnalyser());
     }
     return audioEngineRef.current;
   }
@@ -256,6 +261,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
       setStage("recording");
       const recorder = new TurnRecorder(micStreamRef.current);
       activeRecorderRef.current = recorder;
+      setRecorderAnalyser(recorder.getAnalyser());
 
       const recordingStartPerfMs = await recorder.start();
       const clockSamplePerfMs = performance.now();
@@ -273,15 +279,34 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
         prerollMs,
       };
 
+      setTurnClock({
+        startAudioSec: plannedPlaybackAudioSec,
+        durationMs: session.song.durationMs,
+      });
+
       const { onEnded } = engine.schedule(buffer, plannedPlaybackAudioSec);
       await onEnded;
       await new Promise((resolve) => setTimeout(resolve, RECORDING_TAIL_MS));
 
       if (activeRecorderRef.current !== recorder) return;
       activeRecorderRef.current = null;
+      setRecorderAnalyser(null);
+      setTurnClock(null);
       const result = await recorder.stop();
       await submitRecording(result);
     } catch (err) {
+      const recorder = activeRecorderRef.current;
+      activeRecorderRef.current = null;
+      pendingTimingRef.current = null;
+      setRecorderAnalyser(null);
+      setTurnClock(null);
+      if (recorder) {
+        try {
+          await recorder.stop();
+        } catch {
+          // Preserve the original setup/playback error for the user.
+        }
+      }
       handleApiError(err);
       setStage("turn-intro");
     }
@@ -291,6 +316,8 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
     const recorder = activeRecorderRef.current;
     if (!recorder) return;
     activeRecorderRef.current = null;
+    setRecorderAnalyser(null);
+    setTurnClock(null);
     try {
       const result = await recorder.stop();
       await submitRecording(result);
@@ -299,6 +326,11 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
       setStage("turn-intro");
     }
   }, [submitRecording, handleApiError]);
+
+  const getPlaybackClockSec = useCallback(
+    () => audioEngineRef.current?.currentTime ?? 0,
+    [],
+  );
 
   const continueAfterHandoff = useCallback(async () => {
     if (!session) return;
@@ -356,7 +388,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
     setRevealIndex((index) => Math.min(index + 1, revealResults.performances.length - 1));
   }, [revealResults, revealIndex]);
 
-  const continueToVoting = useCallback(async () => {
+  const finishReveal = useCallback(async () => {
     if (!session || !revealResults) return;
     const current = revealResults.performances[revealIndex];
     const allPlayed = current
@@ -370,46 +402,15 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
       const updated = await api.revealComplete(session.id, allIds);
       setSession(updated);
       setPlayedRevealIds(allPlayed);
-      setVoterIndex(0);
-      setVoteMessage(null);
-      setStage("voting");
+      const final = await api.finalResults(session.id);
+      setFinalResults(final);
+      setStage("results");
     } catch (err) {
       handleApiError(err);
     } finally {
       setBusy(false);
     }
   }, [session, revealResults, revealIndex, playedRevealIds, handleApiError]);
-
-  const castVote = useCallback(
-    async (revealId: string) => {
-      if (!session) return;
-      const voter = session.players[voterIndex];
-      if (!voter) return;
-      setBusy(true);
-      setVoteMessage(null);
-      try {
-        const response = await api.vote(session.id, voter.id, revealId);
-        if (response.phase === "RESULTS") {
-          const final = await api.finalResults(session.id);
-          setFinalResults(final);
-          setStage("results");
-        } else {
-          setVoterIndex((index) => index + 1);
-        }
-      } catch (err) {
-        if (err instanceof ApiRequestError && err.code === "SELF_VOTE") {
-          setVoteMessage("That is your own performance. Choose a different one.");
-        } else if (err instanceof ApiRequestError && err.code === "DUPLICATE_VOTE") {
-          setVoterIndex((index) => index + 1);
-        } else {
-          handleApiError(err);
-        }
-      } finally {
-        setBusy(false);
-      }
-    },
-    [session, voterIndex, handleApiError],
-  );
 
   const playAgain = useCallback(() => {
     window.location.reload();
@@ -427,8 +428,6 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
     return session.players[index + 1] ?? null;
   }, [session]);
 
-  const voter = useMemo(() => session?.players[voterIndex] ?? null, [session, voterIndex]);
-
   const value: GameEngine = {
     stage,
     songs,
@@ -441,14 +440,15 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
     revealResults,
     revealIndex,
     playedRevealIds,
-    voterIndex,
-    voteMessage,
     finalResults,
     error,
     busy,
     currentPlayer,
     nextPlayerForHandoff,
-    voter,
+    recorderAnalyser,
+    songAnalyser,
+    getPlaybackClockSec,
+    turnClock,
     enableMicrophone,
     goToLobby,
     loadSongs,
@@ -459,8 +459,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
     continueAfterHandoff,
     retryProcessing,
     advanceReveal,
-    continueToVoting,
-    castVote,
+    finishReveal,
     playAgain,
     dismissError,
   };

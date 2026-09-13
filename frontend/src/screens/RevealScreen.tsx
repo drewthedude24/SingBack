@@ -1,14 +1,24 @@
+import { useState } from "react";
+
 import { PerformanceCard } from "../components/PerformanceCard";
 import { useGame } from "../game/GameProvider";
 
 export function RevealScreen(): JSX.Element | null {
-  const { revealResults, revealIndex, playedRevealIds, advanceReveal, continueToVoting, busy } =
+  const { revealResults, revealIndex, playedRevealIds, advanceReveal, finishReveal, busy } =
     useGame();
+  const [gradedRevealIds, setGradedRevealIds] = useState<string[]>([]);
 
   if (!revealResults) return null;
   const total = revealResults.performances.length;
   const current = revealResults.performances[revealIndex];
   const isLast = revealIndex === total - 1;
+  const gradingOpen = gradedRevealIds.includes(current.revealId);
+
+  function openGrading(): void {
+    setGradedRevealIds((ids) =>
+      ids.includes(current.revealId) ? ids : [...ids, current.revealId],
+    );
+  }
 
   return (
     <section className="screen reveal-screen">
@@ -28,26 +38,38 @@ export function RevealScreen(): JSX.Element | null {
         ))}
       </div>
 
-      <PerformanceCard
-        title={`Performance ${revealIndex + 1}`}
-        mixUrl={current.mixUrl}
-        score={current.score}
-        feedback={current.feedback}
-        detectedLyrics={current.detectedLyrics}
-      />
+      <div className="reveal-flip-wrap" key={current.revealId}>
+        <PerformanceCard
+          title={`Performance ${revealIndex + 1}`}
+          mixUrl={current.mixUrl}
+          score={gradingOpen ? current.score : undefined}
+          feedback={gradingOpen ? current.feedback : undefined}
+          detectedLyrics={gradingOpen ? current.detectedLyrics : undefined}
+          onEnded={openGrading}
+        />
+      </div>
+
+      {!gradingOpen ? (
+        <p className="reveal-instruction">Play the full performance to unlock its grading.</p>
+      ) : null}
 
       {!isLast ? (
-        <button type="button" className="primary-button" onClick={advanceReveal}>
+        <button
+          type="button"
+          className="primary-button"
+          disabled={!gradingOpen}
+          onClick={advanceReveal}
+        >
           Next performance
         </button>
       ) : (
         <button
           type="button"
           className="primary-button primary-button-large"
-          disabled={busy}
-          onClick={() => void continueToVoting()}
+          disabled={busy || !gradingOpen}
+          onClick={() => void finishReveal()}
         >
-          Continue to voting
+          Show final results
         </button>
       )}
     </section>

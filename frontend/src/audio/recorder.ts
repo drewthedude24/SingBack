@@ -25,8 +25,9 @@ export async function requestMicrophone(): Promise<MediaStream> {
   return navigator.mediaDevices.getUserMedia({
     audio: {
       echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: false,
+      noiseSuppression: false,
+      autoGainControl: true,
+      channelCount: 1,
     },
   });
 }
@@ -48,6 +49,8 @@ export class TurnRecorder {
   private readonly chunks: BlobPart[] = [];
   private readonly startedPromise: Promise<number>;
   private resolveStarted!: (value: number) => void;
+  private analyserContext: AudioContext | null = null;
+  private analyserNode: AnalyserNode | null = null;
   startPerfMs = 0;
 
   constructor(stream: MediaStream) {
@@ -68,6 +71,26 @@ export class TurnRecorder {
       this.startPerfMs = performance.now();
       this.resolveStarted(this.startPerfMs);
     });
+
+    try {
+      const globalWindow = window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const AudioContextCtor = globalWindow.AudioContext ?? globalWindow.webkitAudioContext;
+      if (AudioContextCtor) {
+        this.analyserContext = new AudioContextCtor();
+        const source = this.analyserContext.createMediaStreamSource(stream);
+        this.analyserNode = this.analyserContext.createAnalyser();
+        this.analyserNode.fftSize = 1024;
+        source.connect(this.analyserNode);
+      }
+    } catch {
+      this.analyserNode = null;
+    }
+  }
+
+  getAnalyser(): AnalyserNode | null {
+    return this.analyserNode;
   }
 
   /** Starts capture and resolves with performance.now() at the moment it actually began. */
@@ -87,6 +110,7 @@ export class TurnRecorder {
         () => {
           const stopPerfMs = performance.now();
           const type = this.recorder.mimeType || this.mimeType || "audio/webm";
+          void this.analyserContext?.close();
           resolve({
             blob: new Blob(this.chunks, { type }),
             mimeType: type,

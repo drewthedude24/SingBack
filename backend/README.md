@@ -67,9 +67,8 @@ Use this sequence for one complete round:
 8. Between players, call `POST /api/sessions/{id}/next-player`; repeat the
    upload until its `nextPhase` is `PROCESSING`.
 9. `POST /api/sessions/{id}/finalize`, then play all anonymous performances.
-10. Send all played IDs to `POST /api/sessions/{id}/reveal-complete`.
-11. Submit one vote per player to `POST /api/sessions/{id}/votes`.
-12. Read `GET /api/sessions/{id}/results/final` and fetch narration cue `results`.
+10. Send all played IDs to `POST /api/sessions/{id}/reveal-complete`; this advances directly to results.
+11. Read `GET /api/sessions/{id}/results/final` and fetch narration cue `results`.
 
 Valid narration cues are `listen`, `turn`, `processing`, and `results`. Every
 narration response includes the exact `text`, optional `audioUrl`, and a `source`

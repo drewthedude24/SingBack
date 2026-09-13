@@ -1,6 +1,6 @@
 # SingBack
 
-SingBack is a local multiplayer song-memory party game for HackRice 2026. Players hear one short clip, then take turns recreating it from memory over the same instrumental. After everyone finishes, the game reveals the remixes, shows measurable singing scores, and collects a crowd vote.
+SingBack is a local multiplayer song-memory party game for HackRice 2026. Players hear one short clip, then take turns recreating it from memory over the same instrumental. After everyone finishes, the game reveals each remix and opens its measurable singing grade.
 
 ## Five-hour MVP
 
@@ -11,7 +11,7 @@ The first build targets one reliable three-player round on one laptop:
 3. Record each player over the instrumental.
 4. Upload, align, and mix each vocal.
 5. Reveal every remix only after all turns finish.
-6. Show deterministic scores, grounded feedback, and crowd voting.
+6. Unlock deterministic scores and grounded AI feedback after each reveal plays.
 
 The live path uses React, TypeScript, Vite, FastAPI, MediaRecorder, Web Audio,
 FFmpeg, Librosa, Gemini, and ElevenLabs. Gemini and ElevenLabs have local

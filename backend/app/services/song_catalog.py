@@ -57,5 +57,6 @@ class SongCatalog:
             fullMixUrl=song.full_mix_url,
             instrumentalUrl=f"/media/songs/{song.id}/instrumental.wav",
             expectedLyrics=song.expected_lyrics,
+            lyricLines=song.lyric_lines,
             ready=self.is_ready(song),
         )

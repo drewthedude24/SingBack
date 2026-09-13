@@ -152,7 +152,14 @@ class AudioService:
             timing_filter = f"atrim=start={offset_ms / 1000:.3f},asetpts=PTS-STARTPTS"
         else:
             timing_filter = f"adelay={abs(offset_ms)}:all=1"
-        audio_filter = f"{timing_filter},apad=whole_dur=10,atrim=duration=10"
+        # Singing recorded beside speaker playback is usually much quieter than
+        # the prepared instrumental. Clean and compress the isolated mic before
+        # mixing so soft takes remain audible without clipping loud takes.
+        audio_filter = (
+            f"{timing_filter},highpass=f=80,lowpass=f=10000,"
+            "acompressor=threshold=-24dB:ratio=3:attack=5:release=80:makeup=8dB,"
+            "volume=2.0,alimiter=limit=0.92,apad=whole_dur=10,atrim=duration=10"
+        )
         self._run(
             [
                 "-hide_banner",
@@ -186,8 +193,9 @@ class AudioService:
                 str(vocal_path),
                 "-filter_complex",
                 (
-                    "[0:a]volume=0.80[bed];[1:a]volume=1.15[voice];"
-                    "[bed][voice]amix=inputs=2:duration=first:dropout_transition=0,"
+                    "[0:a]volume=0.38[bed];[1:a]volume=1.35[voice];"
+                    "[bed][voice]amix=inputs=2:duration=first:dropout_transition=0:"
+                    "normalize=0,"
                     "alimiter=limit=0.95[out]"
                 ),
                 "-map",

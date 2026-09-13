@@ -12,7 +12,6 @@ import { ResultsScreen } from "./screens/ResultsScreen";
 import { RevealScreen } from "./screens/RevealScreen";
 import { TurnIntroScreen } from "./screens/TurnIntroScreen";
 import { UploadingScreen } from "./screens/UploadingScreen";
-import { VotingScreen } from "./screens/VotingScreen";
 
 function CurrentScreen(): JSX.Element {
   const { stage } = useGame();
@@ -38,8 +37,6 @@ function CurrentScreen(): JSX.Element {
       return <ProcessingScreen />;
     case "reveal":
       return <RevealScreen />;
-    case "voting":
-      return <VotingScreen />;
     case "results":
       return <ResultsScreen />;
     default:

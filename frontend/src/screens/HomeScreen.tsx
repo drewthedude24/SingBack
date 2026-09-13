@@ -28,6 +28,15 @@ export function HomeScreen(): JSX.Element {
     <section className="screen home-screen">
       <p className="eyebrow">HackRice Party Game</p>
       <h1>SingBack</h1>
+      <div className="hero-visual" aria-hidden="true">
+        <span className="hero-note">♪</span>
+        <div className="hero-equalizer">
+          {Array.from({ length: 18 }, (_, index) => (
+            <span key={index} style={{ animationDelay: `${index * -70}ms` }} />
+          ))}
+        </div>
+        <span className="hero-note hero-note-right">♫</span>
+      </div>
       <p className="tagline">
         Everyone hears one short clip once. Then each player sings it back from memory over the
         same instrumental. Nobody hears a remix until every turn is done.
@@ -38,7 +47,7 @@ export function HomeScreen(): JSX.Element {
         <li>Listen closely &mdash; the reference clip only plays once.</li>
         <li>Each player records their turn over the instrumental, one at a time.</li>
         <li>When everyone is done, every remix is revealed and scored.</li>
-        <li>Vote for your favorite, then see the technical winner and crowd favorite.</li>
+        <li>Reveal every performance, then crown the strongest technical score.</li>
       </ol>
 
       <div className="status-row">

@@ -2,6 +2,7 @@ import { useRef } from "react";
 
 import { mediaUrl } from "../api/client";
 import type { Feedback, Score } from "../api/types";
+import { MetricExplanations } from "./MetricExplanations";
 import { ScoreBar } from "./ScoreBar";
 
 interface PerformanceCardProps {
@@ -56,6 +57,7 @@ export function PerformanceCard({
             confidence={score.confidence.completion}
           />
           <div className="performance-total">Total: {Math.round(score.technicalTotal)}</div>
+          <MetricExplanations />
         </div>
       ) : null}
       {feedback ? (
