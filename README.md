@@ -104,23 +104,11 @@ python3 scripts/validate_song_assets.py
 Sources and license terms are recorded in
 [assets/songs/SOURCES.md](assets/songs/SOURCES.md).
 
-## Tests
-
-```bash
-pytest backend/tests
-```
-
 ## Stack
 
 React, TypeScript, Vite, Web Audio, MediaRecorder on the client. FastAPI,
 FFmpeg, Librosa, NumPy on the server. Gemini for grounded coaching text,
 ElevenLabs for transcription and host narration.
-
-## Docs
-
-- [Integration contract](docs/INTEGRATION_CONTRACT.md), the API and data shapes
-- [Backend setup](backend/README.md)
-- [Sprint plan](docs/SPRINT_PLAN.md), the original build plan
 
 ## Known limits
 
