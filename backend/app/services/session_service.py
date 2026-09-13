@@ -279,6 +279,7 @@ class SessionService:
             detectedLyrics=(
                 recording.analysis.detected_lyrics if recording.analysis else None
             ),
+            evidence=(recording.analysis.evidence if recording.analysis else None),
         )
 
     @staticmethod

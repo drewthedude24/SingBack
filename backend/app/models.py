@@ -74,7 +74,7 @@ class PlayerPublic(ApiModel):
 
 
 class CreateSessionRequest(ApiModel):
-    player_names: list[str] = Field(alias="playerNames", min_length=3, max_length=3)
+    player_names: list[str] = Field(alias="playerNames", min_length=1, max_length=6)
     song_id: str = Field(alias="songId")
 
     @field_validator("player_names")
@@ -128,12 +128,21 @@ class Feedback(ApiModel):
     source: Literal["gemini", "fallback"]
 
 
+class PerformanceEvidence(ApiModel):
+    duration_ms: int = Field(alias="durationMs", gt=0)
+    reference_waveform: list[float] = Field(alias="referenceWaveform")
+    player_waveform: list[float] = Field(alias="playerWaveform")
+    reference_pitch_midi: list[float | None] = Field(alias="referencePitchMidi")
+    player_pitch_midi: list[float | None] = Field(alias="playerPitchMidi")
+
+
 class RevealPerformance(ApiModel):
     reveal_id: str = Field(alias="revealId")
     mix_url: str = Field(alias="mixUrl")
     score: Score
     feedback: Feedback
     detected_lyrics: str | None = Field(alias="detectedLyrics")
+    evidence: PerformanceEvidence | None = None
 
 
 class RevealResults(ApiModel):

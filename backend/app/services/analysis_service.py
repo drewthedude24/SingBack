@@ -7,7 +7,7 @@ from typing import Callable
 
 from backend.app.integrations.elevenlabs import ElevenLabsService
 from backend.app.integrations.gemini import GeminiFeedbackService
-from backend.app.models import Feedback, Score, SongManifestEntry
+from backend.app.models import Feedback, PerformanceEvidence, Score, SongManifestEntry
 from backend.app.scoring.service import ScoringService
 from backend.app.services.audio_service import AudioArtifact
 
@@ -17,6 +17,7 @@ class PerformanceAnalysis:
     score: Score
     feedback: Feedback
     detected_lyrics: str | None
+    evidence: PerformanceEvidence
 
 
 class AnalysisService:
@@ -51,7 +52,7 @@ class AnalysisService:
             song.reference_vocal_path
         )
         transcript = self._elevenlabs.transcribe(artifact.vocal_path)
-        score = self._scoring.score(
+        scoring_result = self._scoring.analyze(
             reference_vocal_path=reference_vocal_path,
             player_vocal_path=artifact.vocal_path,
             expected_lyrics=song.expected_lyrics,
@@ -59,14 +60,15 @@ class AnalysisService:
             transcript_source=transcript.source,
         )
         feedback = self._gemini.feedback(
-            score=score,
+            score=scoring_result.score,
             expected_lyrics=song.expected_lyrics,
             detected_lyrics=transcript.text,
             vocal_path=artifact.vocal_path,
             reference_vocal_path=reference_vocal_path,
         )
         return PerformanceAnalysis(
-            score=score,
+            score=scoring_result.score,
             feedback=feedback,
             detected_lyrics=transcript.text,
+            evidence=scoring_result.evidence,
         )

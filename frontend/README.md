@@ -55,8 +55,8 @@ npm run preview # serve the production build on port 4173
 
 ## Known limitations (matches current backend behavior)
 
-- A session is always exactly three players &mdash; the backend's
-  `CreateSessionRequest` requires `playerNames` of length 3.
+- A session supports 1–6 players. Turn order, handoff screens, processing, reveal,
+  and results derive from the returned `players` array rather than a fixed count.
 - If a recording is detected as silent, the backend still accepts it and
   advances the turn (there is no reject-and-retry-before-storing endpoint yet).
   The UI surfaces a "that came through very quiet" note on the handoff screen

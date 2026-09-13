@@ -43,7 +43,7 @@ export function HomeScreen(): JSX.Element {
       </p>
 
       <ol className="rules-list">
-        <li>Enter three player names and pick a song.</li>
+        <li>Choose 1–6 players; SingBack draws a mystery song.</li>
         <li>Listen closely &mdash; the reference clip only plays once.</li>
         <li>Each player records their turn over the instrumental, one at a time.</li>
         <li>When everyone is done, every remix is revealed and scored.</li>

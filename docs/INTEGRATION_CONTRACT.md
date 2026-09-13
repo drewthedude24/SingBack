@@ -219,7 +219,9 @@ The full score uses the PRD weights: 45% pitch, 25% rhythm, 20% lyrics, and 10% 
 
 ### `POST /api/sessions/{sessionId}/reveal-complete`
 
-Marks that every reveal entry played and advances directly to `RESULTS`. The backend rejects the call unless every reveal ID was acknowledged.
+Marks every reveal entry acknowledged (played or deliberately skipped) and advances
+directly to `RESULTS`. The backend rejects the call unless every reveal ID is sent
+exactly once.
 
 ### `GET /api/sessions/{sessionId}/results/final`
 

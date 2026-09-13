@@ -4,14 +4,15 @@ SingBack is a local multiplayer song-memory party game for HackRice 2026. Player
 
 ## Five-hour MVP
 
-The first build targets one reliable three-player round on one laptop:
+The current build targets one reliable 1-to-6-player round on one laptop:
 
-1. Enter three player names.
-2. Hear one prepared 10-second clip once.
+1. Choose 1–6 players and enter their names.
+2. Let SingBack randomly draw one prepared 10-second clip and hear it once.
 3. Record each player over the instrumental.
 4. Upload, align, and mix each vocal.
 5. Reveal every remix only after all turns finish.
-6. Unlock deterministic scores and grounded AI feedback after each reveal plays.
+6. Play or skip reveals, then inspect deterministic scores, waveform/pitch evidence,
+   and grounded AI feedback.
 
 The live path uses React, TypeScript, Vite, FastAPI, MediaRecorder, Web Audio,
 FFmpeg, Librosa, Gemini, and ElevenLabs. Gemini and ElevenLabs have local

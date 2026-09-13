@@ -45,33 +45,46 @@ export function RevealScreen(): JSX.Element | null {
           score={gradingOpen ? current.score : undefined}
           feedback={gradingOpen ? current.feedback : undefined}
           detectedLyrics={gradingOpen ? current.detectedLyrics : undefined}
+          evidence={gradingOpen ? current.evidence : undefined}
           onEnded={openGrading}
         />
       </div>
 
       {!gradingOpen ? (
-        <p className="reveal-instruction">Play the full performance to unlock its grading.</p>
+        <div className="reveal-skip-row">
+          <p className="reveal-instruction">Play the full performance, or reveal the grade immediately.</p>
+          <button type="button" className="secondary-button" onClick={openGrading}>
+            Show this grade now
+          </button>
+        </div>
       ) : null}
 
-      {!isLast ? (
-        <button
-          type="button"
-          className="primary-button"
-          disabled={!gradingOpen}
-          onClick={advanceReveal}
-        >
-          Next performance
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="primary-button primary-button-large"
-          disabled={busy || !gradingOpen}
-          onClick={() => void finishReveal()}
-        >
-          Show final results
-        </button>
-      )}
+      <div className="reveal-actions">
+        {!isLast ? (
+          <button type="button" className="primary-button" onClick={advanceReveal}>
+            Next performance
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="primary-button primary-button-large"
+            disabled={busy}
+            onClick={() => void finishReveal()}
+          >
+            Show final results
+          </button>
+        )}
+        {!isLast ? (
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={busy}
+            onClick={() => void finishReveal()}
+          >
+            Skip all reveals &amp; see results
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }

@@ -258,7 +258,6 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
 
       const buffer = await bufferPromise;
 
-      setStage("recording");
       const recorder = new TurnRecorder(micStreamRef.current);
       activeRecorderRef.current = recorder;
       setRecorderAnalyser(recorder.getAnalyser());
@@ -285,6 +284,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
       });
 
       const { onEnded } = engine.schedule(buffer, plannedPlaybackAudioSec);
+      setStage("recording");
       await onEnded;
       await new Promise((resolve) => setTimeout(resolve, RECORDING_TAIL_MS));
 
@@ -295,6 +295,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
       const result = await recorder.stop();
       await submitRecording(result);
     } catch (err) {
+      audioEngineRef.current?.stop();
       const recorder = activeRecorderRef.current;
       activeRecorderRef.current = null;
       pendingTimingRef.current = null;
@@ -315,6 +316,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
   const stopRecordingEarly = useCallback(async () => {
     const recorder = activeRecorderRef.current;
     if (!recorder) return;
+    audioEngineRef.current?.stop();
     activeRecorderRef.current = null;
     setRecorderAnalyser(null);
     setTurnClock(null);

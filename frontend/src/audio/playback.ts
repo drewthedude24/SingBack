@@ -9,6 +9,7 @@ export class InstrumentalPlayer {
   private readonly buffers = new Map<string, AudioBuffer>();
   private readonly analyserNode: AnalyserNode;
   private readonly outputGain: GainNode;
+  private currentSource: AudioBufferSourceNode | null = null;
 
   constructor() {
     const globalWindow = window as typeof window & { webkitAudioContext?: typeof AudioContext };
@@ -57,13 +58,34 @@ export class InstrumentalPlayer {
     source: AudioBufferSourceNode;
     onEnded: Promise<void>;
   } {
+    this.stop();
     const source = this.context.createBufferSource();
+    this.currentSource = source;
     source.buffer = buffer;
     source.connect(this.analyserNode);
     const onEnded = new Promise<void>((resolve) => {
-      source.addEventListener("ended", () => resolve(), { once: true });
+      source.addEventListener(
+        "ended",
+        () => {
+          if (this.currentSource === source) this.currentSource = null;
+          source.disconnect();
+          resolve();
+        },
+        { once: true },
+      );
     });
     source.start(whenAudioSec);
     return { source, onEnded };
+  }
+
+  stop(): void {
+    const source = this.currentSource;
+    if (!source) return;
+    this.currentSource = null;
+    try {
+      source.stop();
+    } catch {
+      source.disconnect();
+    }
   }
 }

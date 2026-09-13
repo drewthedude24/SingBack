@@ -83,7 +83,7 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
         raw_guess = recording["mixUrl"].replace("mix.mp3", "raw.wav")
         assert client.get(raw_guess).status_code == 404
 
-        if index < 2:
+        if index < len(players) - 1:
             assert recording["nextPhase"] == "NEXT_PLAYER"
             next_turn = client.post(f"/api/sessions/{session_id}/next-player")
             assert next_turn.json()["phase"] == "TURN_INTRO"
@@ -113,6 +113,14 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
         item["feedback"]["source"] == "fallback"
         for item in reveal["performances"]
     )
+    assert all(item["evidence"] is not None for item in reveal["performances"])
+    for item in reveal["performances"]:
+        evidence = item["evidence"]
+        assert evidence["durationMs"] > 0
+        assert len(evidence["referenceWaveform"]) == 180
+        assert len(evidence["playerWaveform"]) == 180
+        assert len(evidence["referencePitchMidi"]) == 180
+        assert len(evidence["playerPitchMidi"]) == 180
 
     reveal_ids = [item["revealId"] for item in reveal["performances"]]
     completed = client.post(
@@ -136,7 +144,7 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
 def test_validation_errors_use_shared_shape(client: TestClient) -> None:
     response = client.post(
         "/api/sessions",
-        json={"playerNames": ["Only", "Two"], "songId": "missing"},
+        json={"playerNames": [], "songId": "summer-day"},
     )
     assert_error(response, 422, "VALIDATION_ERROR")
     assert response.json()["error"]["retryable"] is False
@@ -147,5 +155,28 @@ def test_validation_errors_use_shared_shape(client: TestClient) -> None:
     )
     assert_error(duplicate_names, 422, "VALIDATION_ERROR")
 
+    too_many = client.post(
+        "/api/sessions",
+        json={
+            "playerNames": ["A", "B", "C", "D", "E", "F", "G"],
+            "songId": "summer-day",
+        },
+    )
+    assert_error(too_many, 422, "VALIDATION_ERROR")
+
     missing_route = client.get("/api/definitely-not-a-route")
     assert_error(missing_route, 404, "NOT_FOUND")
+
+
+def test_variable_player_counts_are_accepted(client: TestClient) -> None:
+    for names in [["Solo"], ["A", "B"], ["A", "B", "C", "D", "E", "F"]]:
+        response = client.post(
+            "/api/sessions",
+            json={"playerNames": names, "songId": "summer-day"},
+        )
+        assert response.status_code == 201
+        payload = response.json()
+        assert len(payload["players"]) == len(names)
+        assert [player["turnOrder"] for player in payload["players"]] == list(
+            range(len(names))
+        )

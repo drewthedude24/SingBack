@@ -31,6 +31,7 @@ export function ResultsScreen(): JSX.Element | null {
             score={performance.score}
             feedback={performance.feedback}
             detectedLyrics={performance.detectedLyrics}
+            evidence={performance.evidence}
           />
         ))}
       </div>

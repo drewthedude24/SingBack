@@ -48,9 +48,13 @@ reweighted; Gemini coaching becomes deterministic local coaching; narration is
 returned as readable text without an audio URL.
 
 The deterministic score weights are pitch 45%, rhythm 25%, lyric recall 20%,
-and completion 10%. Librosa owns the numeric measurements. ElevenLabs Scribe
-owns transcription, and Gemini receives the measured result plus vocal audio to
-produce schema-validated feedback only.
+and completion 10%. Missing player pitch/rhythm is scored as zero; a provider
+outage marks only that provider-dependent metric unavailable and rebalances the
+remaining weights. Librosa owns pitch, onset timing, and voiced-duration
+measurements. ElevenLabs Scribe owns transcription. Gemini hears both isolated
+vocals and receives the fixed measurements to produce schema-validated feedback;
+it cannot change the number. Reveal responses include downsampled reference/player
+waveforms and octave-aligned pitch traces so the UI can show the evidence.
 
 ## Frontend integration order
 
@@ -66,8 +70,9 @@ Use this sequence for one complete round:
    `POST /api/sessions/{id}/recordings`.
 8. Between players, call `POST /api/sessions/{id}/next-player`; repeat the
    upload until its `nextPhase` is `PROCESSING`.
-9. `POST /api/sessions/{id}/finalize`, then play all anonymous performances.
-10. Send all played IDs to `POST /api/sessions/{id}/reveal-complete`; this advances directly to results.
+9. `POST /api/sessions/{id}/finalize`, then play or skip anonymous performances.
+10. Send every acknowledged/skipped ID to `POST /api/sessions/{id}/reveal-complete`;
+    this advances directly to results.
 11. Read `GET /api/sessions/{id}/results/final` and fetch narration cue `results`.
 
 Valid narration cues are `listen`, `turn`, `processing`, and `results`. Every

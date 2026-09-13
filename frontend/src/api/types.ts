@@ -85,12 +85,21 @@ export interface Feedback {
   source: string;
 }
 
+export interface PerformanceEvidence {
+  durationMs: number;
+  referenceWaveform: number[];
+  playerWaveform: number[];
+  referencePitchMidi: Array<number | null>;
+  playerPitchMidi: Array<number | null>;
+}
+
 export interface RevealPerformance {
   revealId: string;
   mixUrl: string;
   score: Score;
   feedback: Feedback;
   detectedLyrics: string | null;
+  evidence: PerformanceEvidence | null;
 }
 
 export interface RevealResults {

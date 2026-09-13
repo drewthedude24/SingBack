@@ -8,7 +8,7 @@ from pathlib import Path
 import librosa
 import numpy as np
 
-from backend.app.models import Score
+from backend.app.models import PerformanceEvidence, Score
 
 
 SAMPLE_RATE = 22_050
@@ -27,6 +27,7 @@ class PitchAnalysis:
     confidence: str
     voiced_seconds: float
     mean_error_semitones: float | None
+    series: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,12 @@ class RhythmAnalysis:
     confidence: str
     mean_error_ms: float | None
     onset_count: int
+
+
+@dataclass(frozen=True)
+class ScoringResult:
+    score: Score
+    evidence: PerformanceEvidence
 
 
 class ScoringService:
@@ -49,6 +56,23 @@ class ScoringService:
         detected_lyrics: str | None,
         transcript_source: str,
     ) -> Score:
+        return self.analyze(
+            reference_vocal_path=reference_vocal_path,
+            player_vocal_path=player_vocal_path,
+            expected_lyrics=expected_lyrics,
+            detected_lyrics=detected_lyrics,
+            transcript_source=transcript_source,
+        ).score
+
+    def analyze(
+        self,
+        *,
+        reference_vocal_path: Path,
+        player_vocal_path: Path,
+        expected_lyrics: str,
+        detected_lyrics: str | None,
+        transcript_source: str,
+    ) -> ScoringResult:
         reference = self._load(reference_vocal_path)
         player = self._load(player_vocal_path)
 
@@ -70,6 +94,11 @@ class ScoringService:
         lyrics_score, lyric_error = self._lyric_score(
             expected_lyrics, detected_lyrics
         )
+        # A successful transcription request that heard no words is evidence of
+        # missed lyrics, not a reason to remove the lyric category from scoring.
+        if transcript_source == "elevenlabs" and lyrics_score is None:
+            lyrics_score = 0.0
+            lyric_error = 1.0
 
         components = {
             "pitch": pitch_score,
@@ -100,7 +129,7 @@ class ScoringService:
             else "partial"
         )
 
-        return Score(
+        score = Score(
             pitch=self._rounded(pitch_score),
             rhythm=self._rounded(rhythm_score),
             lyrics=self._rounded(lyrics_score),
@@ -128,6 +157,15 @@ class ScoringService:
                 "transcriptSource": transcript_source,
             },
         )
+        return ScoringResult(
+            score=score,
+            evidence=self._performance_evidence(
+                reference,
+                player,
+                reference_pitch,
+                player_pitch,
+            ),
+        )
 
     @staticmethod
     def _load(path: Path) -> np.ndarray:
@@ -150,8 +188,15 @@ class ScoringService:
         valid_count = int(np.count_nonzero(valid))
         voiced_seconds = valid_count * HOP_LENGTH / SAMPLE_RATE
         if valid_count < 8:
-            return PitchAnalysis(None, "insufficient_voiced_audio", voiced_seconds, None)
-        midi = librosa.hz_to_midi(f0[valid])
+            return PitchAnalysis(
+                None,
+                "insufficient_voiced_audio",
+                voiced_seconds,
+                None,
+                ScoringService._midi_series(f0, valid),
+            )
+        midi_series = ScoringService._midi_series(f0, valid)
+        midi = midi_series[valid]
         probability = float(np.nanmedian(voiced_probability[valid]))
         confidence = "ok" if probability >= 0.55 and valid_count >= 20 else "low"
         return PitchAnalysis(
@@ -159,21 +204,87 @@ class ScoringService:
             confidence=confidence,
             voiced_seconds=voiced_seconds,
             mean_error_semitones=None,
+            series=midi_series,
         )
+
+    @staticmethod
+    def _midi_series(f0: np.ndarray, valid: np.ndarray) -> np.ndarray:
+        series = np.full(f0.shape, np.nan, dtype=float)
+        series[valid] = librosa.hz_to_midi(f0[valid])
+        return series
+
+    @classmethod
+    def _performance_evidence(
+        cls,
+        reference: np.ndarray,
+        player: np.ndarray,
+        reference_pitch: PitchAnalysis,
+        player_pitch: PitchAnalysis,
+    ) -> PerformanceEvidence:
+        bins = 180
+        reference_waveform = cls._waveform_bins(reference, bins)
+        player_waveform = cls._waveform_bins(player, bins)
+        common_peak = max(reference_waveform + player_waveform + [1e-6])
+        reference_waveform = [round(value / common_peak, 4) for value in reference_waveform]
+        player_waveform = [round(value / common_peak, 4) for value in player_waveform]
+
+        reference_series = cls._pitch_bins(reference_pitch.series, bins)
+        player_series = cls._pitch_bins(player_pitch.series, bins)
+        reference_values = [value for value in reference_series if value is not None]
+        player_values = [value for value in player_series if value is not None]
+        if reference_values and player_values:
+            octave_offset = round(
+                (float(np.median(player_values)) - float(np.median(reference_values)))
+                / 12.0
+            ) * 12.0
+            player_series = [
+                None if value is None else round(value - octave_offset, 2)
+                for value in player_series
+            ]
+
+        duration_ms = max(
+            1,
+            round(max(reference.size, player.size) / SAMPLE_RATE * 1000),
+        )
+        return PerformanceEvidence(
+            durationMs=duration_ms,
+            referenceWaveform=reference_waveform,
+            playerWaveform=player_waveform,
+            referencePitchMidi=reference_series,
+            playerPitchMidi=player_series,
+        )
+
+    @staticmethod
+    def _waveform_bins(audio: np.ndarray, bins: int) -> list[float]:
+        if audio.size == 0:
+            return [0.0] * bins
+        edges = np.linspace(0, audio.size, bins + 1, dtype=int)
+        values: list[float] = []
+        for index in range(bins):
+            chunk = audio[edges[index] : edges[index + 1]]
+            values.append(float(np.sqrt(np.mean(np.square(chunk)))) if chunk.size else 0.0)
+        return values
+
+    @staticmethod
+    def _pitch_bins(series: np.ndarray | None, bins: int) -> list[float | None]:
+        if series is None or series.size == 0:
+            return [None] * bins
+        edges = np.linspace(0, series.size, bins + 1, dtype=int)
+        values: list[float | None] = []
+        for index in range(bins):
+            chunk = series[edges[index] : edges[index + 1]]
+            valid = chunk[np.isfinite(chunk)]
+            values.append(round(float(np.median(valid)), 2) if valid.size else None)
+        return values
 
     @staticmethod
     def _compare_pitch(
         reference: PitchAnalysis, player: PitchAnalysis
     ) -> tuple[float | None, str, float | None]:
-        if not isinstance(reference.contour, np.ndarray) or not isinstance(
-            player.contour, np.ndarray
-        ):
-            confidence = (
-                player.confidence
-                if player.confidence != "ok"
-                else reference.confidence
-            )
-            return None, confidence, None
+        if not isinstance(reference.contour, np.ndarray):
+            return None, reference.confidence, None
+        if not isinstance(player.contour, np.ndarray):
+            return 0.0, player.confidence, None
         # Treat octave-equivalent singing as valid for different vocal ranges,
         # but retain all other register/key error. The previous median-centering
         # made a melody sung in any wrong key score as perfect.
@@ -209,8 +320,10 @@ class ScoringService:
     def _compare_rhythm(
         reference: np.ndarray, player: np.ndarray
     ) -> tuple[float | None, str, float | None]:
-        if len(reference) < 2 or len(player) < 2:
-            return None, "insufficient_onsets", None
+        if len(reference) < 2:
+            return None, "reference_insufficient_onsets", None
+        if len(player) < 2:
+            return 0.0, "player_insufficient_onsets", None
         # Compare the spacing between phrases rather than absolute onset time;
         # this avoids punishing a small recording-device latency twice.
         reference_intervals = np.diff(reference)

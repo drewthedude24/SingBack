@@ -61,3 +61,30 @@ def test_rhythm_comparison_ignores_constant_device_latency() -> None:
 
     assert score == pytest.approx(100)
     assert error_ms == pytest.approx(0)
+
+
+def test_missing_player_signal_scores_zero_instead_of_being_ignored() -> None:
+    reference_pitch = PitchAnalysis(
+        contour=np.array([60.0, 62.0, 64.0]),
+        confidence="ok",
+        voiced_seconds=1.0,
+        mean_error_semitones=None,
+    )
+    missing_pitch = PitchAnalysis(
+        contour=None,
+        confidence="silent",
+        voiced_seconds=0.0,
+        mean_error_semitones=None,
+    )
+
+    pitch_score, pitch_confidence, _ = ScoringService._compare_pitch(
+        reference_pitch, missing_pitch
+    )
+    rhythm_score, rhythm_confidence, _ = ScoringService._compare_rhythm(
+        np.array([0.2, 0.8, 1.6]), np.array([])
+    )
+
+    assert pitch_score == 0
+    assert pitch_confidence == "silent"
+    assert rhythm_score == 0
+    assert rhythm_confidence == "player_insufficient_onsets"
