@@ -59,7 +59,7 @@ interface GameEngine {
   beginTurn: () => Promise<void>;
   stopRecordingEarly: () => Promise<void>;
   continueAfterHandoff: () => Promise<void>;
-  retryProcessing: () => Promise<void>;
+  retryProcessing: (beforeReveal?: () => Promise<void>) => Promise<void>;
   advanceReveal: () => void;
   finishReveal: () => Promise<void>;
   playAgain: () => void;
@@ -347,7 +347,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
     }
   }, [session, handleApiError]);
 
-  const retryProcessing = useCallback(async () => {
+  const retryProcessing = useCallback(async (beforeReveal?: () => Promise<void>) => {
     if (!session || finalizeInFlightRef.current) return;
     finalizeInFlightRef.current = true;
     setBusy(true);
@@ -358,6 +358,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
       setSession((prev) => (prev ? { ...prev, phase: "REVEAL" } : prev));
       setRevealIndex(0);
       setPlayedRevealIds([]);
+      await beforeReveal?.();
       setStage("reveal");
     } catch (err) {
       if (err instanceof ApiRequestError && err.code === "INVALID_SESSION_PHASE") {
@@ -367,6 +368,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
           setSession((prev) => (prev ? { ...prev, phase: "REVEAL" } : prev));
           setRevealIndex(0);
           setPlayedRevealIds([]);
+          await beforeReveal?.();
           setStage("reveal");
         } catch (innerErr) {
           handleApiError(innerErr);
