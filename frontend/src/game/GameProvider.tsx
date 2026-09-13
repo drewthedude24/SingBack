@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { api, ApiRequestError, instrumentalUrlForSong } from "../api/client";
+import { api, ApiRequestError, instrumentalUrlForSong, mediaUrl } from "../api/client";
 import type {
   FinalResults,
   PlayerPublic,
@@ -20,6 +20,7 @@ import type {
 } from "../api/types";
 import { InstrumentalPlayer } from "../audio/playback";
 import { fileFromRecording, requestMicrophone, TurnRecorder } from "../audio/recorder";
+import { preloadReferenceWaveform } from "../components/LiveRecordingEvidence";
 import type { EngineError, Stage } from "./types";
 
 const COUNTDOWN_SECONDS = 3;
@@ -160,6 +161,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
       try {
         const created = await api.createSession(playerNames, songId);
         const started = await api.startSession(created.id);
+        void preloadReferenceWaveform(mediaUrl(started.song.referenceVocalUrl));
         setSession(started);
         setStage("listen");
       } catch (err) {

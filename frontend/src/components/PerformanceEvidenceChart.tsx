@@ -4,8 +4,8 @@ import type { PerformanceEvidence } from "../api/types";
 
 const WIDTH = 1000;
 const HEIGHT = 300;
-const PLOT_LEFT = 28;
-const PLOT_RIGHT = 972;
+const PLOT_LEFT = 4;
+const PLOT_RIGHT = 996;
 const TRACK_HEIGHT = 82;
 const REFERENCE_CENTER = 88;
 const PLAYER_CENTER = 220;

@@ -4,6 +4,7 @@ import type { PerformanceEvidence } from "../api/types";
 import { PerformanceEvidenceChart } from "./PerformanceEvidenceChart";
 
 const BINS = 180;
+const referenceWaveformCache = new Map<string, Promise<number[]>>();
 
 function waveformBins(audio: Float32Array): number[] {
   if (audio.length === 0) return Array(BINS).fill(0) as number[];
@@ -23,6 +24,35 @@ function waveformBins(audio: Float32Array): number[] {
 function normalized(values: number[]): number[] {
   const peak = Math.max(...values, 0.000001);
   return values.map((value) => value / peak);
+}
+
+/** Decode and cache the reference vocal early so its first samples are ready when recording starts. */
+export function preloadReferenceWaveform(referenceVocalUrl: string): Promise<number[]> {
+  const cached = referenceWaveformCache.get(referenceVocalUrl);
+  if (cached) return cached;
+
+  const promise = (async () => {
+    const globalWindow = window as typeof window & { webkitAudioContext?: typeof AudioContext };
+    const AudioContextCtor = globalWindow.AudioContext ?? globalWindow.webkitAudioContext;
+    if (!AudioContextCtor) return Array(BINS).fill(0) as number[];
+
+    const context = new AudioContextCtor();
+    try {
+      const response = await fetch(referenceVocalUrl);
+      if (!response.ok) throw new Error("Reference vocal could not be loaded.");
+      const bytes = await response.arrayBuffer();
+      const buffer = await context.decodeAudioData(bytes);
+      return waveformBins(buffer.getChannelData(0));
+    } finally {
+      if (context.state !== "closed") await context.close();
+    }
+  })().catch((error: unknown) => {
+    referenceWaveformCache.delete(referenceVocalUrl);
+    throw error;
+  });
+
+  referenceWaveformCache.set(referenceVocalUrl, promise);
+  return promise;
 }
 
 export function LiveRecordingEvidence({
@@ -50,26 +80,15 @@ export function LiveRecordingEvidence({
 
   useEffect(() => {
     let cancelled = false;
-    const globalWindow = window as typeof window & { webkitAudioContext?: typeof AudioContext };
-    const AudioContextCtor = globalWindow.AudioContext ?? globalWindow.webkitAudioContext;
-    if (!AudioContextCtor) return;
-    const context = new AudioContextCtor();
-    void fetch(referenceVocalUrl)
-      .then((response) => {
-        if (!response.ok) throw new Error("Reference vocal could not be loaded.");
-        return response.arrayBuffer();
-      })
-      .then((bytes) => context.decodeAudioData(bytes))
-      .then((buffer) => {
-        if (!cancelled) setReferenceWaveform(waveformBins(buffer.getChannelData(0)));
+    void preloadReferenceWaveform(referenceVocalUrl)
+      .then((values) => {
+        if (!cancelled) setReferenceWaveform(values);
       })
       .catch(() => {
         if (!cancelled) setReferenceWaveform(Array(BINS).fill(0) as number[]);
-      })
-      .finally(() => void context.close());
+      });
     return () => {
       cancelled = true;
-      void context.close();
     };
   }, [referenceVocalUrl]);
 
