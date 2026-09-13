@@ -98,8 +98,6 @@ export function PerformanceEvidenceChart({
         <rect x="0" y="167" width={WIDTH} height="106" rx="18" className="evidence-track-bg" />
         <text x="20" y="27" className="evidence-label evidence-reference-label">Original vocal</text>
         <text x="20" y="159" className="evidence-label evidence-player-label">Your vocal</text>
-        <line x1={PLOT_LEFT} x2={PLOT_RIGHT} y1={REFERENCE_CENTER} y2={REFERENCE_CENTER} className="evidence-center-line" />
-        <line x1={PLOT_LEFT} x2={PLOT_RIGHT} y1={PLAYER_CENTER} y2={PLAYER_CENTER} className="evidence-center-line" />
         <path d={waveformPath(evidence.referenceWaveform, REFERENCE_CENTER)} className="evidence-waveform-reference" />
         <path d={waveformPath(evidence.playerWaveform, PLAYER_CENTER)} className="evidence-waveform-player" />
         {referencePitchPaths.map((path, index) => (

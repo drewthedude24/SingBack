@@ -63,7 +63,7 @@ export function LobbyScreen(): JSX.Element {
         <fieldset>
           <legend>How many players?</legend>
           <div className="player-count-picker" role="group" aria-label="Player count">
-            {[1, 2, 3, 4, 5, 6].map((count) => (
+            {[1, 2, 3, 4].map((count) => (
               <button
                 key={count}
                 type="button"
@@ -104,7 +104,7 @@ export function LobbyScreen(): JSX.Element {
           )}
           {!songsLoading && readySongs.length > 0 ? (
             <p className="mystery-song-copy">
-              One of {readySongs.length} prepared vocal clips will be picked at random after you continue.
+              A prepared vocal challenge will be picked at random after you continue.
             </p>
           ) : null}
         </fieldset>

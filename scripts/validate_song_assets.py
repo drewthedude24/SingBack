@@ -52,6 +52,16 @@ def main() -> None:
             fail(f"{song_id}: manifest duration must be 10000 ms")
         if len(song["expectedLyrics"].split()) > 10:
             fail(f"{song_id}: scoring phrase must contain at most 10 words")
+        lyric_lines = song.get("lyricLines", [])
+        if not lyric_lines:
+            fail(f"{song_id}: lyric cues are missing")
+        if lyric_lines[0]["startMs"] != 0:
+            fail(f"{song_id}: lyric cues must start at 0 ms")
+        if lyric_lines[-1]["endMs"] != EXPECTED_DURATION_MS:
+            fail(f"{song_id}: lyric cues must cover the full 10000 ms")
+        for previous, current in zip(lyric_lines, lyric_lines[1:]):
+            if previous["endMs"] != current["startMs"]:
+                fail(f"{song_id}: lyric cues must not contain timing gaps")
 
         song_dir = ROOT / "assets" / "songs" / song_id
         for filename in ("full.wav", "instrumental.wav", "vocals.wav"):

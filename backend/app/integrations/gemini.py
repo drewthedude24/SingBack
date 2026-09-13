@@ -23,6 +23,7 @@ class GeminiFeedbackService:
     def __init__(self, settings: Settings) -> None:
         self._api_key = settings.gemini_api_key
         self._model = settings.gemini_model
+        self._timeout_ms = round(settings.external_api_timeout_seconds * 1000)
 
     @property
     def configured(self) -> bool:
@@ -57,7 +58,10 @@ class GeminiFeedbackService:
                 "than the short phrases already supplied. Measurements:\n"
                 + json.dumps(measurements, separators=(",", ":"))
             )
-            client = genai.Client(api_key=self._api_key)
+            client = genai.Client(
+                api_key=self._api_key,
+                http_options=types.HttpOptions(timeout=self._timeout_ms),
+            )
             response = client.models.generate_content(
                 model=self._model,
                 contents=[

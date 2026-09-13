@@ -121,6 +121,8 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
         assert len(evidence["playerWaveform"]) == 180
         assert len(evidence["referencePitchMidi"]) == 180
         assert len(evidence["playerPitchMidi"]) == 180
+        assert max(evidence["referenceWaveform"]) == 1
+        assert max(evidence["playerWaveform"]) == 1
 
     reveal_ids = [item["revealId"] for item in reveal["performances"]]
     completed = client.post(
@@ -158,7 +160,7 @@ def test_validation_errors_use_shared_shape(client: TestClient) -> None:
     too_many = client.post(
         "/api/sessions",
         json={
-            "playerNames": ["A", "B", "C", "D", "E", "F", "G"],
+            "playerNames": ["A", "B", "C", "D", "E"],
             "songId": "summer-day",
         },
     )
@@ -169,7 +171,7 @@ def test_validation_errors_use_shared_shape(client: TestClient) -> None:
 
 
 def test_variable_player_counts_are_accepted(client: TestClient) -> None:
-    for names in [["Solo"], ["A", "B"], ["A", "B", "C", "D", "E", "F"]]:
+    for names in [["Solo"], ["A", "B"], ["A", "B", "C", "D"]]:
         response = client.post(
             "/api/sessions",
             json={"playerNames": names, "songId": "summer-day"},

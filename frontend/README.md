@@ -55,7 +55,7 @@ npm run preview # serve the production build on port 4173
 
 ## Known limitations (matches current backend behavior)
 
-- A session supports 1–6 players. Turn order, handoff screens, processing, reveal,
+- A session supports 1–4 players. Turn order, handoff screens, processing, reveal,
   and results derive from the returned `players` array rather than a fixed count.
 - If a recording is detected as silent, the backend still accepts it and
   advances the turn (there is no reject-and-retry-before-storing endpoint yet).

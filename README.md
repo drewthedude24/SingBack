@@ -4,9 +4,9 @@ SingBack is a local multiplayer song-memory party game for HackRice 2026. Player
 
 ## Five-hour MVP
 
-The current build targets one reliable 1-to-6-player round on one laptop:
+The current build targets one reliable 1-to-4-player round on one laptop:
 
-1. Choose 1–6 players and enter their names.
+1. Choose 1–4 players and enter their names.
 2. Let SingBack randomly draw one prepared 10-second clip and hear it once.
 3. Record each player over the instrumental.
 4. Upload, align, and mix each vocal.
@@ -36,6 +36,10 @@ game host at important transitions.
 Every song folder includes `full.wav`, `instrumental.wav`, and `vocals.wav`.
 The stems are prepared offline with Demucs; Demucs is not part of the live demo
 request path.
+
+The manifest also contains continuous 0–10 second lyric cues. Reference vocal
+features are cached when a round begins, so each player reuses the same original
+pitch, rhythm, and waveform analysis during scoring.
 
 Validate the catalog before integrating it with the backend:
 

@@ -616,7 +616,8 @@ input[type="text"]:focus {
 }
 
 .grading-formula,
-.grading-ai-note {
+.grading-ai-note,
+.grading-timing {
   color: var(--text-muted);
   font-size: 0.82rem;
   line-height: 1.45;
@@ -625,6 +626,11 @@ input[type="text"]:focus {
 .grading-ai-note {
   padding-top: 8px;
   border-top: 1px solid var(--border);
+}
+
+.grading-timing {
+  color: var(--accent-3);
+  font-variant-numeric: tabular-nums;
 }
 
 .countdown-screen {
@@ -690,6 +696,138 @@ input[type="text"]:focus {
   align-items: center;
   justify-content: center;
   min-height: 40vh;
+}
+
+.processing-screen {
+  min-height: 72vh;
+  text-align: center;
+}
+
+.processing-stage {
+  position: relative;
+  width: min(100%, 330px);
+  height: 190px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(124, 92, 255, 0.42);
+  border-radius: 32px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 68% 30%, rgba(53, 226, 201), transparent 2px),
+    radial-gradient(circle at 30% 72%, rgba(244, 197, 66, 0.8), transparent 2px),
+    linear-gradient(145deg, rgba(255, 93, 162, 0.13), rgba(124, 92, 255, 0.2));
+  box-shadow: inset 0 0 55px rgba(124, 92, 255, 0.16), 0 24px 70px rgba(0, 0, 0, 0.24);
+}
+
+.processing-record {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--gold) 0 10%, #211630 11% 18%, transparent 19%),
+    repeating-radial-gradient(circle, #211630 0 4px, #392a5c 5px 7px);
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.38);
+  animation: processing-spin 2.5s linear infinite;
+}
+
+.processing-record span {
+  position: relative;
+  z-index: 1;
+  color: #1a1406;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.processing-record-back {
+  top: 42px;
+  left: 45px;
+  width: 105px;
+  height: 105px;
+  opacity: 0.52;
+  animation-direction: reverse;
+}
+
+.processing-record-front {
+  top: 31px;
+  right: 45px;
+}
+
+.processing-note {
+  position: absolute;
+  color: var(--accent-3);
+  font-size: 2rem;
+  animation: processing-float 1.7s ease-in-out infinite;
+}
+
+.processing-note-one {
+  top: 16px;
+  right: 20px;
+}
+
+.processing-note-two {
+  bottom: 10px;
+  left: 18px;
+  color: var(--accent);
+  animation-delay: -0.8s;
+}
+
+@keyframes processing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes processing-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(9deg);
+  }
+}
+
+.processing-status {
+  min-height: 1.5em;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.processing-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 560px);
+}
+
+.processing-progress-track {
+  height: 15px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-raised);
+}
+
+.processing-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent), var(--gold));
+  box-shadow: 0 0 16px rgba(255, 93, 162, 0.55);
+  transition: width 0.4s ease;
+}
+
+.processing-progress strong {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.processing-estimate {
+  margin: -8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
 }
 
 .reveal-progress {
@@ -833,11 +971,6 @@ input[type="text"]:focus {
 
 .evidence-pitch-player {
   stroke: var(--accent);
-}
-
-.evidence-center-line {
-  stroke: rgba(246, 244, 251, 0.18);
-  stroke-width: 1;
 }
 
 .evidence-playhead {

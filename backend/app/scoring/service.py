@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import re
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from backend.app.models import PerformanceEvidence, Score
 
 
 SAMPLE_RATE = 22_050
-HOP_LENGTH = 256
+HOP_LENGTH = 512
 SCORE_WEIGHTS = {
     "pitch": 0.45,
     "rhythm": 0.25,
@@ -44,8 +45,53 @@ class ScoringResult:
     evidence: PerformanceEvidence
 
 
+@dataclass(frozen=True)
+class ReferenceFeatures:
+    audio: np.ndarray
+    pitch: PitchAnalysis
+    onsets: np.ndarray
+
+
 class ScoringService:
     """Compute repeatable metrics; no generative model can modify these values."""
+
+    def __init__(self) -> None:
+        self._reference_cache: dict[tuple[str, int, int], ReferenceFeatures] = {}
+        self._reference_lock = threading.Lock()
+
+    def prewarm_reference(self, path: Path) -> None:
+        """Prepare immutable song features while players are listening/recording."""
+        threading.Thread(
+            target=self.prepare_reference,
+            args=(path,),
+            daemon=True,
+            name=f"singback-reference-{path.stem}",
+        ).start()
+
+    def prepare_reference(self, path: Path) -> ReferenceFeatures:
+        resolved = path.resolve()
+        stat = resolved.stat()
+        cache_key = (str(resolved), stat.st_mtime_ns, stat.st_size)
+        cached = self._reference_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        # Hold the lock through extraction so simultaneous player workers do not
+        # all run pYIN over the same reference vocal.
+        with self._reference_lock:
+            cached = self._reference_cache.get(cache_key)
+            if cached is not None:
+                return cached
+            audio = self._load(resolved)
+            features = ReferenceFeatures(
+                audio=audio,
+                pitch=self._pitch(audio),
+                onsets=self._onsets(audio),
+            )
+            stale_keys = [key for key in self._reference_cache if key[0] == str(resolved)]
+            for key in stale_keys:
+                self._reference_cache.pop(key, None)
+            self._reference_cache[cache_key] = features
+            return features
 
     def score(
         self,
@@ -73,16 +119,17 @@ class ScoringService:
         detected_lyrics: str | None,
         transcript_source: str,
     ) -> ScoringResult:
-        reference = self._load(reference_vocal_path)
+        reference_features = self.prepare_reference(reference_vocal_path)
+        reference = reference_features.audio
         player = self._load(player_vocal_path)
 
-        reference_pitch = self._pitch(reference)
+        reference_pitch = reference_features.pitch
         player_pitch = self._pitch(player)
         pitch_score, pitch_confidence, pitch_error = self._compare_pitch(
             reference_pitch, player_pitch
         )
 
-        reference_rhythm = self._onsets(reference)
+        reference_rhythm = reference_features.onsets
         player_rhythm = self._onsets(player)
         rhythm_score, rhythm_confidence, rhythm_error = self._compare_rhythm(
             reference_rhythm, player_rhythm
@@ -224,9 +271,12 @@ class ScoringService:
         bins = 180
         reference_waveform = cls._waveform_bins(reference, bins)
         player_waveform = cls._waveform_bins(player, bins)
-        common_peak = max(reference_waveform + player_waveform + [1e-6])
-        reference_waveform = [round(value / common_peak, 4) for value in reference_waveform]
-        player_waveform = [round(value / common_peak, 4) for value in player_waveform]
+        reference_peak = max(reference_waveform + [1e-6])
+        player_peak = max(player_waveform + [1e-6])
+        reference_waveform = [
+            round(value / reference_peak, 4) for value in reference_waveform
+        ]
+        player_waveform = [round(value / player_peak, 4) for value in player_waveform]
 
         reference_series = cls._pitch_bins(reference_pitch.series, bins)
         player_series = cls._pitch_bins(player_pitch.series, bins)

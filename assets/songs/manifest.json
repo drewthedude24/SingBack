@@ -14,8 +14,8 @@
     "referenceVocalPath": "assets/songs/best-thing/vocals.wav",
     "expectedLyrics": "I don't wanna be crying tears, they won't bring you",
     "lyricLines": [
-      { "startMs": 200, "endMs": 4600, "text": "I don't wanna be crying tears," },
-      { "startMs": 4800, "endMs": 9800, "text": "they won't bring you" }
+      { "startMs": 0, "endMs": 4600, "text": "I don't wanna be crying tears," },
+      { "startMs": 4600, "endMs": 10000, "text": "they won't bring you" }
     ],
     "bpm": null,
     "key": null
@@ -35,7 +35,7 @@
     "referenceVocalPath": "assets/songs/good-to-you/vocals.wav",
     "expectedLyrics": "You aren't even worth it",
     "lyricLines": [
-      { "startMs": 300, "endMs": 9800, "text": "You aren't even worth it" }
+      { "startMs": 0, "endMs": 10000, "text": "You aren't even worth it" }
     ],
     "bpm": null,
     "key": null
@@ -55,7 +55,7 @@
     "referenceVocalPath": "assets/songs/one-such-a-night/vocals.wav",
     "expectedLyrics": "Oh, like smitten by the moonlight",
     "lyricLines": [
-      { "startMs": 200, "endMs": 9800, "text": "Oh, like smitten by the moonlight" }
+      { "startMs": 0, "endMs": 10000, "text": "Oh, like smitten by the moonlight" }
     ],
     "bpm": null,
     "key": null
@@ -75,8 +75,8 @@
     "referenceVocalPath": "assets/songs/summer-day/vocals.wav",
     "expectedLyrics": "Oh, summer day, with you I just wanna stay",
     "lyricLines": [
-      { "startMs": 200, "endMs": 4700, "text": "Oh, summer day," },
-      { "startMs": 4900, "endMs": 9800, "text": "with you I just wanna stay" }
+      { "startMs": 0, "endMs": 4800, "text": "Oh, summer day," },
+      { "startMs": 4800, "endMs": 10000, "text": "with you I just wanna stay" }
     ],
     "bpm": null,
     "key": null
@@ -96,8 +96,8 @@
     "referenceVocalPath": "assets/songs/too-sad-to-cry/vocals.wav",
     "expectedLyrics": "Too old to care and too young to die",
     "lyricLines": [
-      { "startMs": 300, "endMs": 5000, "text": "Too old to care" },
-      { "startMs": 5200, "endMs": 9800, "text": "and too young to die" }
+      { "startMs": 0, "endMs": 5000, "text": "Too old to care" },
+      { "startMs": 5000, "endMs": 10000, "text": "and too young to die" }
     ],
     "bpm": null,
     "key": null

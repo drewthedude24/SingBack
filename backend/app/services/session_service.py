@@ -88,6 +88,8 @@ class SessionService:
             state = self.get(session_id)
             self._require_phase(state, expected)
             state.phase = target
+            if expected is Phase.LOBBY and target is Phase.LISTEN:
+                self._analysis_service.prewarm(state.song)
             return self.view(state)
 
     def active_player(self, session_id: str, player_id: str) -> SessionState:

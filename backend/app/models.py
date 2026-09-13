@@ -74,7 +74,7 @@ class PlayerPublic(ApiModel):
 
 
 class CreateSessionRequest(ApiModel):
-    player_names: list[str] = Field(alias="playerNames", min_length=1, max_length=6)
+    player_names: list[str] = Field(alias="playerNames", min_length=1, max_length=4)
     song_id: str = Field(alias="songId")
 
     @field_validator("player_names")

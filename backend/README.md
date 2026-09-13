@@ -56,6 +56,15 @@ vocals and receives the fixed measurements to produce schema-validated feedback;
 it cannot change the number. Reveal responses include downsampled reference/player
 waveforms and octave-aligned pitch traces so the UI can show the evidence.
 
+Reference pitch/onset features are prewarmed in a background thread as soon as a
+round starts and cached for the lifetime of the backend. Pitch analysis uses a
+512-sample hop, which preserves roughly 43 measurements per second while avoiding
+the previous duplicate high-resolution work for every player. Score diagnostics
+record `localAnalysisMs`, `transcriptionMs`, and `geminiFeedbackMs` so a slow
+provider or local analysis step can be identified after a round. External calls
+use a 12-second fail-fast timeout and fall back locally instead of trapping the
+game on the processing screen.
+
 ## Frontend integration order
 
 Use this sequence for one complete round:

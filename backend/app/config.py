@@ -36,7 +36,7 @@ class Settings:
     elevenlabs_scribe_model: str = field(
         default_factory=lambda: os.getenv("ELEVENLABS_SCRIBE_MODEL", "scribe_v2")
     )
-    external_api_timeout_seconds: float = 20.0
+    external_api_timeout_seconds: float = 12.0
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
         "http://127.0.0.1:5173",

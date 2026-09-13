@@ -11,6 +11,9 @@ export function MetricExplanations({ score }: { score: Score }): JSX.Element {
   const referenceVoiced = diagnostic(score, "referenceVoicedSeconds");
   const playerVoiced = diagnostic(score, "playerVoicedSeconds");
   const transcriptSource = diagnostic(score, "transcriptSource");
+  const transcriptionMs = diagnostic(score, "transcriptionMs");
+  const localAnalysisMs = diagnostic(score, "localAnalysisMs");
+  const geminiFeedbackMs = diagnostic(score, "geminiFeedbackMs");
 
   return (
     <details className="metric-explanations">
@@ -62,6 +65,11 @@ export function MetricExplanations({ score }: { score: Score }): JSX.Element {
       <p className="grading-ai-note">
         Gemini hears both isolated vocals and turns these fixed measurements into coaching;
         it cannot change the score. Transcript source: {String(transcriptSource ?? "unavailable")}.
+      </p>
+      <p className="grading-timing">
+        Processing for this take: local analysis {typeof localAnalysisMs === "number" ? `${(localAnalysisMs / 1000).toFixed(1)}s` : "—"},
+        transcription {typeof transcriptionMs === "number" ? `${(transcriptionMs / 1000).toFixed(1)}s` : "—"},
+        Gemini {typeof geminiFeedbackMs === "number" ? `${(geminiFeedbackMs / 1000).toFixed(1)}s` : "—"}.
       </p>
     </details>
   );
