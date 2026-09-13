@@ -29,6 +29,7 @@ class AudioArtifact:
     applied_offset_ms: int
     silent: bool
     mix_url: str
+    vocal_path: Path
 
 
 def resolve_ffmpeg(explicit_binary: str | None) -> str:
@@ -92,6 +93,7 @@ class AudioService:
             applied_offset_ms=applied_offset_ms,
             silent=silent,
             mix_url=f"/media/sessions/{session_id}/{player_id}/mix.mp3",
+            vocal_path=vocal_path,
         )
 
     def _run(self, args: list[str]) -> subprocess.CompletedProcess[str]:

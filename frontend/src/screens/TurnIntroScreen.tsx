@@ -1,3 +1,4 @@
+import { HostNarration } from "../components/HostNarration";
 import { useGame } from "../game/GameProvider";
 
 export function TurnIntroScreen(): JSX.Element | null {
@@ -12,6 +13,7 @@ export function TurnIntroScreen(): JSX.Element | null {
         When you are ready, you will get a three second countdown, then the instrumental will
         play while you sing the clip back from memory.
       </p>
+      <HostNarration sessionId={session.id} cue="turn" />
       <button type="button" className="primary-button primary-button-large" onClick={() => void beginTurn()}>
         I&rsquo;m ready
       </button>

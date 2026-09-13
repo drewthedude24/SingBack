@@ -9,6 +9,7 @@ interface PerformanceCardProps {
   mixUrl: string;
   score?: Score;
   feedback?: Feedback;
+  detectedLyrics?: string | null;
   onEnded?: () => void;
   selectLabel?: string;
   onSelect?: () => void;
@@ -20,6 +21,7 @@ export function PerformanceCard({
   mixUrl,
   score,
   feedback,
+  detectedLyrics,
   onEnded,
   selectLabel,
   onSelect,
@@ -39,6 +41,12 @@ export function PerformanceCard({
       />
       {score ? (
         <div className="performance-scores">
+          <div className="analysis-meta">
+            <span>{score.scoringProfile === "full" ? "Full analysis" : "Reduced analysis"}</span>
+            {feedback ? (
+              <span>{feedback.source === "gemini" ? "Gemini AI coach" : "Offline coach"}</span>
+            ) : null}
+          </div>
           <ScoreBar label="Pitch" value={score.pitch} confidence={score.confidence.pitch} />
           <ScoreBar label="Rhythm" value={score.rhythm} confidence={score.confidence.rhythm} />
           <ScoreBar label="Lyrics" value={score.lyrics} confidence={score.confidence.lyrics} />
@@ -61,6 +69,11 @@ export function PerformanceCard({
           </p>
           <p className="performance-announcer">"{feedback.announcerLine}"</p>
         </div>
+      ) : null}
+      {detectedLyrics ? (
+        <p className="detected-lyrics">
+          <strong>Heard:</strong> &ldquo;{detectedLyrics}&rdquo;
+        </p>
       ) : null}
       {selectLabel && onSelect ? (
         <button type="button" className="primary-button" onClick={onSelect} disabled={disabled}>

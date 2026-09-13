@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 
 import { mediaUrl } from "../api/client";
+import { HostNarration } from "../components/HostNarration";
+import { LyricsPrompt } from "../components/LyricsPrompt";
 import { useGame } from "../game/GameProvider";
 
 export function ListenScreen(): JSX.Element | null {
@@ -26,6 +28,8 @@ export function ListenScreen(): JSX.Element | null {
       <p className="eyebrow">Listen closely</p>
       <h1>{session.song.title}</h1>
       <p className="tagline">You only get one play. Everyone should be listening now.</p>
+      <HostNarration sessionId={session.id} cue="listen" />
+      <LyricsPrompt lyrics={session.song.expectedLyrics} />
 
       <audio ref={audioRef} src={mediaUrl(session.song.fullMixUrl)} onEnded={handleEnded} />
 

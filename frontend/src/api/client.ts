@@ -2,6 +2,8 @@ import type {
   ApiErrorBody,
   FinalResults,
   HealthStatus,
+  NarrationCue,
+  NarrationResponse,
   RecordingResponse,
   RevealResults,
   SessionSong,
@@ -82,6 +84,8 @@ export const api = {
   createSession: (playerNames: string[], songId: string) =>
     request<SessionView>("/api/sessions", jsonInit("POST", { playerNames, songId })),
   getSession: (sessionId: string) => request<SessionView>(`/api/sessions/${sessionId}`),
+  narration: (sessionId: string, cue: NarrationCue) =>
+    request<NarrationResponse>(`/api/sessions/${sessionId}/narration/${cue}`),
   startSession: (sessionId: string) =>
     request<SessionView>(`/api/sessions/${sessionId}/start`, { method: "POST" }),
   referenceComplete: (sessionId: string) =>
@@ -116,11 +120,6 @@ export function mediaUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
-/**
- * The API never hands the frontend an instrumental URL directly (only the full
- * reference mix). Every prepared song follows the same on-disk layout, so the
- * instrumental lives at the same path as the full mix with the filename swapped.
- */
 export function instrumentalUrlForSong(song: SessionSong): string {
-  return mediaUrl(song.fullMixUrl.replace(/full\.[a-zA-Z0-9]+$/, "instrumental.wav"));
+  return mediaUrl(song.instrumentalUrl);
 }

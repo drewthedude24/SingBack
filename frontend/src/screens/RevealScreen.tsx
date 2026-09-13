@@ -33,6 +33,7 @@ export function RevealScreen(): JSX.Element | null {
         mixUrl={current.mixUrl}
         score={current.score}
         feedback={current.feedback}
+        detectedLyrics={current.detectedLyrics}
       />
 
       {!isLast ? (

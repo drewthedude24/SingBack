@@ -1,0 +1,1 @@
+"""Deterministic singing analysis."""

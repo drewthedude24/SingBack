@@ -33,6 +33,14 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
     players = session["players"]
     assert session["phase"] == "LOBBY"
     assert session["currentPlayerId"] == players[0]["id"]
+    assert session["song"]["expectedLyrics"]
+    assert session["song"]["instrumentalUrl"].endswith("/instrumental.wav")
+
+    narration = client.get(f"/api/sessions/{session_id}/narration/listen")
+    assert narration.status_code == 200
+    assert narration.json()["cue"] == "listen"
+    assert narration.json()["source"] == "fallback"
+    assert narration.json()["audioUrl"] is None
 
     premature = client.post(f"/api/sessions/{session_id}/reference-complete")
     assert_error(premature, 409, "INVALID_SESSION_PHASE")
@@ -94,7 +102,15 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
     assert len(reveal["performances"]) == 3
     assert {item["mixUrl"] for item in reveal["performances"]} == set(mix_urls)
     assert all(
-        item["score"]["scoringProfile"] == "completion_only"
+        item["score"]["scoringProfile"] != "completion_only"
+        for item in reveal["performances"]
+    )
+    assert all(
+        0 <= item["score"]["technicalTotal"] <= 100
+        for item in reveal["performances"]
+    )
+    assert all(
+        item["feedback"]["source"] == "fallback"
         for item in reveal["performances"]
     )
 
@@ -129,6 +145,10 @@ def test_complete_three_player_round(client: TestClient, vocal_wav: bytes) -> No
     assert sum(item["votes"] for item in results["performances"]) == 3
     assert results["technicalWinnerPlayerId"] in {player["id"] for player in players}
     assert results["crowdFavoritePlayerId"] in {player["id"] for player in players}
+
+    final_narration = client.get(f"/api/sessions/{session_id}/narration/results")
+    assert final_narration.status_code == 200
+    assert "technical crown" in final_narration.json()["text"]
 
 
 def test_validation_errors_use_shared_shape(client: TestClient) -> None:

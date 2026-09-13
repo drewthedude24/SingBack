@@ -18,6 +18,8 @@ export interface SongPublic {
   artist: string;
   durationMs: number;
   fullMixUrl: string;
+  instrumentalUrl: string;
+  expectedLyrics: string;
   ready: boolean;
 }
 
@@ -32,6 +34,8 @@ export interface SessionSong {
   title: string;
   durationMs: number;
   fullMixUrl: string;
+  instrumentalUrl: string;
+  expectedLyrics: string;
 }
 
 export interface SessionView {
@@ -62,6 +66,7 @@ export interface Score {
   technicalTotal: number;
   scoringProfile: string;
   confidence: Record<string, string>;
+  diagnostics: Record<string, string | number | null>;
 }
 
 export interface Feedback {
@@ -78,6 +83,7 @@ export interface RevealPerformance {
   mixUrl: string;
   score: Score;
   feedback: Feedback;
+  detectedLyrics: string | null;
 }
 
 export interface RevealResults {
@@ -112,6 +118,15 @@ export interface HealthStatus {
   ffmpeg: boolean;
   gemini: string;
   elevenlabs: string;
+}
+
+export type NarrationCue = "listen" | "turn" | "processing" | "results";
+
+export interface NarrationResponse {
+  cue: NarrationCue;
+  text: string;
+  audioUrl: string | null;
+  source: "elevenlabs" | "fallback";
 }
 
 export interface ApiErrorPayload {

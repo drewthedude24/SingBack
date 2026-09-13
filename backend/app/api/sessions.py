@@ -8,6 +8,8 @@ from backend.app.errors import ApiError
 from backend.app.models import (
     CreateSessionRequest,
     FinalResults,
+    NarrationCue,
+    NarrationResponse,
     RecordingResponse,
     RevealCompleteRequest,
     RevealResults,
@@ -32,6 +34,24 @@ def create_session(payload: CreateSessionRequest, request: Request) -> SessionVi
 def get_session(session_id: str, request: Request) -> SessionView:
     state = request.app.state.session_service.get(session_id)
     return request.app.state.session_service.view(state)
+
+
+@router.get(
+    "/{session_id}/narration/{cue}",
+    response_model=NarrationResponse,
+    response_model_by_alias=True,
+)
+def narration(
+    session_id: str, cue: NarrationCue, request: Request
+) -> NarrationResponse:
+    text = request.app.state.session_service.narration_text(session_id, cue)
+    result = request.app.state.elevenlabs_service.narrate(text)
+    return NarrationResponse(
+        cue=cue,
+        text=text,
+        audioUrl=result.audio_url,
+        source=result.source,
+    )
 
 
 @router.post(

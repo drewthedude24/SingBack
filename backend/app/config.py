@@ -14,6 +14,29 @@ class Settings:
     max_upload_bytes: int = 20 * 1024 * 1024
     ffmpeg_timeout_seconds: int = 45
     ffmpeg_bin: str | None = field(default_factory=lambda: os.getenv("FFMPEG_BIN"))
+    gemini_api_key: str | None = field(
+        default_factory=lambda: os.getenv("GEMINI_API_KEY") or None
+    )
+    gemini_model: str = field(
+        default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    )
+    elevenlabs_api_key: str | None = field(
+        default_factory=lambda: os.getenv("ELEVENLABS_API_KEY") or None
+    )
+    elevenlabs_voice_id: str = field(
+        default_factory=lambda: os.getenv(
+            "ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb"
+        )
+    )
+    elevenlabs_tts_model: str = field(
+        default_factory=lambda: os.getenv(
+            "ELEVENLABS_TTS_MODEL", "eleven_flash_v2_5"
+        )
+    )
+    elevenlabs_scribe_model: str = field(
+        default_factory=lambda: os.getenv("ELEVENLABS_SCRIBE_MODEL", "scribe_v2")
+    )
+    external_api_timeout_seconds: float = 20.0
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -36,3 +59,7 @@ class Settings:
     @property
     def private_media_root(self) -> Path:
         return self.runtime_root / "private"
+
+    @property
+    def narration_media_root(self) -> Path:
+        return self.runtime_root / "narration"

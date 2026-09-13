@@ -104,7 +104,9 @@ Response:
     "id": "demo_song",
     "title": "Demo Song",
     "durationMs": 10000,
-    "fullMixUrl": "/media/songs/demo_song/full.wav"
+    "fullMixUrl": "/media/songs/demo_song/full.wav",
+    "instrumentalUrl": "/media/songs/demo_song/instrumental.wav",
+    "expectedLyrics": "expected lyric phrase"
   },
   "players": [
     {"id": "player_uuid", "displayName": "Ava", "turnOrder": 0}
@@ -117,6 +119,12 @@ Response:
 ### `POST /api/sessions/{sessionId}/start`
 
 Valid only from `LOBBY`. Returns the complete session view with phase `LISTEN`.
+
+### `GET /api/sessions/{sessionId}/narration/{cue}`
+
+Valid cues are `listen`, `turn`, `processing`, and `results`. Returns the host
+line as text in every case and an ElevenLabs-generated `audioUrl` when TTS is
+configured and succeeds. The results cue is valid only after voting completes.
 
 ### `POST /api/sessions/{sessionId}/reference-complete`
 
@@ -188,7 +196,8 @@ Before reveal, return `409`. During reveal, return anonymous entries in frozen r
         "completion": 100.0,
         "technicalTotal": 83.04,
         "scoringProfile": "full",
-        "confidence": {"pitch": "ok", "rhythm": "ok", "lyrics": "ok"}
+        "confidence": {"pitch": "ok", "rhythm": "ok", "lyrics": "ok"},
+        "diagnostics": {"pitchMeanErrorSemitones": 1.25, "transcriptSource": "elevenlabs"}
       },
       "feedback": {
         "summary": "Strong melody recall with one late entrance.",
@@ -197,7 +206,8 @@ Before reveal, return `409`. During reveal, return anonymous entries in frozen r
         "announcerLine": "The melody survived the memory test.",
         "tags": ["accurate melody", "late entrance"],
         "source": "gemini"
-      }
+      },
+      "detectedLyrics": "expected lyric phrase"
     }
   ]
 }

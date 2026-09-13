@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -44,6 +45,8 @@ class SongPublic(ApiModel):
     artist: str
     duration_ms: int = Field(alias="durationMs")
     full_mix_url: str = Field(alias="fullMixUrl")
+    instrumental_url: str = Field(alias="instrumentalUrl")
+    expected_lyrics: str = Field(alias="expectedLyrics")
     ready: bool
 
 
@@ -52,6 +55,8 @@ class SessionSong(ApiModel):
     title: str
     duration_ms: int = Field(alias="durationMs")
     full_mix_url: str = Field(alias="fullMixUrl")
+    instrumental_url: str = Field(alias="instrumentalUrl")
+    expected_lyrics: str = Field(alias="expectedLyrics")
 
 
 class PlayerPublic(ApiModel):
@@ -103,15 +108,16 @@ class Score(ApiModel):
     technical_total: float = Field(alias="technicalTotal")
     scoring_profile: str = Field(alias="scoringProfile")
     confidence: dict[str, str]
+    diagnostics: dict[str, float | int | str | None] = Field(default_factory=dict)
 
 
 class Feedback(ApiModel):
-    summary: str
-    strength: str
-    improvement: str
-    announcer_line: str = Field(alias="announcerLine")
-    tags: list[str]
-    source: str
+    summary: str = Field(max_length=120)
+    strength: str = Field(max_length=100)
+    improvement: str = Field(max_length=100)
+    announcer_line: str = Field(alias="announcerLine", max_length=140)
+    tags: list[str] = Field(max_length=3)
+    source: Literal["gemini", "fallback"]
 
 
 class RevealPerformance(ApiModel):
@@ -119,6 +125,7 @@ class RevealPerformance(ApiModel):
     mix_url: str = Field(alias="mixUrl")
     score: Score
     feedback: Feedback
+    detected_lyrics: str | None = Field(alias="detectedLyrics")
 
 
 class RevealResults(ApiModel):
@@ -155,3 +162,17 @@ class FinalResults(ApiModel):
     performances: list[FinalPerformance]
     technical_winner_player_id: str = Field(alias="technicalWinnerPlayerId")
     crowd_favorite_player_id: str = Field(alias="crowdFavoritePlayerId")
+
+
+class NarrationCue(StrEnum):
+    LISTEN = "listen"
+    TURN = "turn"
+    PROCESSING = "processing"
+    RESULTS = "results"
+
+
+class NarrationResponse(ApiModel):
+    cue: NarrationCue
+    text: str
+    audio_url: str | None = Field(alias="audioUrl")
+    source: Literal["elevenlabs", "fallback"]

@@ -11,6 +11,7 @@ from backend.app.models import (
     Feedback,
     FinalPerformance,
     FinalResults,
+    NarrationCue,
     Phase,
     PlayerPublic,
     RecordingResponse,
@@ -23,6 +24,7 @@ from backend.app.models import (
     VoteResponse,
 )
 from backend.app.services.audio_service import AudioArtifact
+from backend.app.services.analysis_service import AnalysisService, PerformanceAnalysis
 from backend.app.services.song_catalog import SongCatalog
 
 
@@ -31,6 +33,7 @@ class RecordingState:
     id: str
     player_id: str
     artifact: AudioArtifact
+    analysis: PerformanceAnalysis | None = None
 
 
 @dataclass
@@ -47,8 +50,11 @@ class SessionState:
 
 
 class SessionService:
-    def __init__(self, song_catalog: SongCatalog) -> None:
+    def __init__(
+        self, song_catalog: SongCatalog, analysis_service: AnalysisService
+    ) -> None:
         self._song_catalog = song_catalog
+        self._analysis_service = analysis_service
         self._sessions: dict[str, SessionState] = {}
         self._lock = threading.RLock()
 
@@ -144,6 +150,18 @@ class SessionService:
                 raise ApiError(
                     409, "ARTIFACTS_NOT_READY", "Every player must upload a recording."
                 )
+            artifacts = {
+                player_id: recording.artifact
+                for player_id, recording in state.recordings.items()
+            }
+
+        analyses = self._analysis_service.analyze_many(state.song, artifacts)
+
+        with self._lock:
+            state = self.get(session_id)
+            self._require_phase(state, Phase.PROCESSING)
+            for player_id, analysis in analyses.items():
+                state.recordings[player_id].analysis = analysis
             state.reveal_order = [player.id for player in state.players]
             random.SystemRandom().shuffle(state.reveal_order)
             state.phase = Phase.REVEAL
@@ -240,6 +258,37 @@ class SessionService:
             crowdFavoritePlayerId=crowd_favorite.id,
         )
 
+    def narration_text(self, session_id: str, cue: NarrationCue) -> str:
+        state = self.get(session_id)
+        if cue is NarrationCue.LISTEN:
+            return (
+                f"Listen closely to {state.song.title}. "
+                "You get one play, then you sing it back."
+            )
+        if cue is NarrationCue.TURN:
+            player = state.players[state.current_player_index]
+            return f"{player.display_name}, take the stage. Your memory remix starts now."
+        if cue is NarrationCue.PROCESSING:
+            return "All performances are in. The SingBack table is calculating the reveal."
+        if cue is NarrationCue.RESULTS:
+            self._require_phase(state, Phase.RESULTS)
+            final = self.final_results(session_id)
+            winner = next(
+                player
+                for player in state.players
+                if player.id == final.technical_winner_player_id
+            )
+            crowd = next(
+                player
+                for player in state.players
+                if player.id == final.crowd_favorite_player_id
+            )
+            return (
+                f"{winner.display_name} wins the technical crown. "
+                f"{crowd.display_name} is the crowd favorite."
+            )
+        raise ApiError(400, "INVALID_NARRATION_CUE", "The narration cue is unknown.")
+
     def view(self, state: SessionState) -> SessionView:
         current_player_id = None
         if state.phase not in {Phase.REVEAL, Phase.VOTING, Phase.RESULTS}:
@@ -252,6 +301,8 @@ class SessionService:
                 title=state.song.title,
                 durationMs=state.song.duration_ms,
                 fullMixUrl=state.song.full_mix_url,
+                instrumentalUrl=f"/media/songs/{state.song.id}/instrumental.wav",
+                expectedLyrics=state.song.expected_lyrics,
             ),
             players=state.players,
             currentPlayerId=current_player_id,
@@ -268,10 +319,15 @@ class SessionService:
             mixUrl=recording.artifact.mix_url,
             score=self._score_for(recording),
             feedback=self._feedback_for(recording),
+            detectedLyrics=(
+                recording.analysis.detected_lyrics if recording.analysis else None
+            ),
         )
 
     @staticmethod
     def _score_for(recording: RecordingState) -> Score:
+        if recording.analysis:
+            return recording.analysis.score
         completion = 0.0 if recording.artifact.silent else 100.0
         return Score(
             pitch=None,
@@ -286,10 +342,13 @@ class SessionService:
                 "lyrics": "unavailable",
                 "completion": "ok",
             },
+            diagnostics={"analysisStatus": "not_finalized"},
         )
 
     @staticmethod
     def _feedback_for(recording: RecordingState) -> Feedback:
+        if recording.analysis:
+            return recording.analysis.feedback
         if recording.artifact.silent:
             return Feedback(
                 summary="No clear vocal was detected.",

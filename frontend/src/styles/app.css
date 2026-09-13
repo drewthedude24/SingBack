@@ -313,6 +313,63 @@ input[type="text"]:focus {
   color: var(--gold);
 }
 
+.lyrics-prompt,
+.host-narration {
+  width: min(100%, 680px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  padding: 16px;
+}
+
+.lyrics-prompt {
+  text-align: center;
+  border-color: var(--gold);
+}
+
+.lyrics-label,
+.host-narration-label {
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lyrics-prompt p {
+  margin: 8px 0 0;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.host-narration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.host-narration-copy p,
+.detected-lyrics {
+  margin: 6px 0 0;
+}
+
+.host-narration audio {
+  width: min(260px, 100%);
+}
+
+.narration-fallback {
+  max-width: 220px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.detected-lyrics {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 .countdown-screen {
   align-items: center;
   text-align: center;
@@ -429,6 +486,22 @@ input[type="text"]:focus {
   gap: 8px;
 }
 
+.analysis-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analysis-meta span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
 .score-bar-label {
   display: flex;
   justify-content: space-between;
@@ -516,5 +589,10 @@ input[type="text"]:focus {
 
   fieldset {
     padding: 12px;
+  }
+
+  .host-narration {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

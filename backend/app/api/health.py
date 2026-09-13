@@ -10,6 +10,14 @@ def health(request: Request) -> dict[str, str | bool]:
     return {
         "status": "ok",
         "ffmpeg": bool(request.app.state.audio_service.ffmpeg_bin),
-        "gemini": "unconfigured",
-        "elevenlabs": "unconfigured",
+        "gemini": (
+            "configured"
+            if request.app.state.gemini_service.configured
+            else "unconfigured"
+        ),
+        "elevenlabs": (
+            "configured"
+            if request.app.state.elevenlabs_service.configured
+            else "unconfigured"
+        ),
     }

@@ -25,7 +25,7 @@ The sprint has one rule: protect the end-to-end game loop before improving any i
 - Online rooms, accounts, matchmaking, and cloud deployment
 - Live Demucs separation; all stems must be prepared before the sprint
 - Five production-ready songs; ship one verified song and leave manifest slots for the rest
-- Presage, Voice Changer, Karaoke Mode, High Stakes Mode, and lyric hints
+- Presage, Voice Changer, Karaoke Mode, High Stakes Mode, and word-by-word lyric timing
 - WebSockets, background job infrastructure, and a production ORM migration system
 - Perfect recovery after a browser refresh during an active recording
 - Elaborate pitch graphs, animations, leaderboards, and mobile-first polish

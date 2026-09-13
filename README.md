@@ -13,7 +13,15 @@ The first build targets one reliable three-player round on one laptop:
 5. Reveal every remix only after all turns finish.
 6. Show deterministic scores, grounded feedback, and crowd voting.
 
-The live path uses React, TypeScript, Vite, FastAPI, SQLite, MediaRecorder, Web Audio, and FFmpeg. Gemini and ElevenLabs are optional integrations with local fallbacks so an API failure cannot stop the demo.
+The live path uses React, TypeScript, Vite, FastAPI, MediaRecorder, Web Audio,
+FFmpeg, Librosa, Gemini, and ElevenLabs. Gemini and ElevenLabs have local
+fallbacks so an API failure cannot stop the demo.
+
+The scoring pipeline keeps judging explainable: Librosa measures pitch contour,
+rhythm, and completion; ElevenLabs Scribe supplies the detected lyric transcript;
+and Gemini turns those fixed measurements plus the vocal audio into structured
+coaching. Gemini cannot modify the numeric result. ElevenLabs also voices the
+game host at important transitions.
 
 ## Planning documents
 
@@ -34,4 +42,6 @@ Validate the catalog before integrating it with the backend:
 python3 scripts/validate_song_assets.py
 ```
 
-Implementation intentionally starts with one complete vertical slice before adding scoring sophistication, extra songs, or visual effects.
+See [backend setup](backend/README.md) for API-key configuration. Lyrics are
+deliberately shown during listening and recording so first-time players know the
+short phrase they are being asked to recreate.

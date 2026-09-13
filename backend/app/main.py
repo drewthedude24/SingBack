@@ -10,6 +10,10 @@ from starlette.exceptions import HTTPException as StarletteHttpException
 from backend.app.api import health, sessions, songs
 from backend.app.config import Settings
 from backend.app.errors import ApiError, api_error_handler
+from backend.app.integrations.elevenlabs import ElevenLabsService
+from backend.app.integrations.gemini import GeminiFeedbackService
+from backend.app.scoring.service import ScoringService
+from backend.app.services.analysis_service import AnalysisService
 from backend.app.services.audio_service import AudioService
 from backend.app.services.session_service import SessionService
 from backend.app.services.song_catalog import SongCatalog
@@ -19,14 +23,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     settings.session_media_root.mkdir(parents=True, exist_ok=True)
     settings.private_media_root.mkdir(parents=True, exist_ok=True)
+    settings.narration_media_root.mkdir(parents=True, exist_ok=True)
     song_catalog = SongCatalog(settings.song_manifest_path, settings.repository_root)
     audio_service = AudioService(settings)
-    session_service = SessionService(song_catalog)
+    elevenlabs_service = ElevenLabsService(settings)
+    gemini_service = GeminiFeedbackService(settings)
+    analysis_service = AnalysisService(
+        scoring=ScoringService(),
+        elevenlabs=elevenlabs_service,
+        gemini=gemini_service,
+        reference_path_resolver=song_catalog.asset_path,
+    )
+    session_service = SessionService(song_catalog, analysis_service)
 
     application = FastAPI(title="SingBack API", version="0.1.0")
     application.state.settings = settings
     application.state.song_catalog = song_catalog
     application.state.audio_service = audio_service
+    application.state.elevenlabs_service = elevenlabs_service
+    application.state.gemini_service = gemini_service
+    application.state.analysis_service = analysis_service
     application.state.session_service = session_service
 
     application.add_middleware(
@@ -86,6 +102,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "/media/sessions",
         StaticFiles(directory=settings.session_media_root),
         name="session-media",
+    )
+    application.mount(
+        "/media/narration",
+        StaticFiles(directory=settings.narration_media_root),
+        name="narration-media",
     )
     return application
 

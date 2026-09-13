@@ -29,6 +29,8 @@ def test_song_catalog_and_static_media(client: TestClient) -> None:
     assert len(songs) == 5
     assert all(song["ready"] for song in songs)
     assert all(song["durationMs"] == 10_000 for song in songs)
+    assert all(song["expectedLyrics"] for song in songs)
+    assert all(song["instrumentalUrl"].endswith("/instrumental.wav") for song in songs)
 
     media = client.get(songs[0]["fullMixUrl"])
     assert media.status_code == 200
