@@ -14,7 +14,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
 cp .env.example .env
-uvicorn backend.app.main:app --reload --port 8000 --env-file .env
+.venv/bin/uvicorn backend.app.main:app --reload --port 8000 --env-file .env
 ```
 
 Then open <http://127.0.0.1:8000/docs> for the interactive API documentation.
@@ -46,6 +46,10 @@ The response reports `configured` or `unconfigured` for each provider. With no
 keys, lyric scoring is marked unavailable and the other measured components are
 reweighted; Gemini coaching becomes deterministic local coaching; narration is
 returned as readable text without an audio URL.
+
+Keep `--env-file .env` in the startup command. Without it, a key can exist in
+the file while the running backend still reports ElevenLabs as `unconfigured`.
+Restart the backend after adding or changing a key.
 
 The deterministic score weights are pitch 45%, rhythm 25%, lyric recall 20%,
 and completion 10%. Missing player pitch/rhythm is scored as zero; a provider

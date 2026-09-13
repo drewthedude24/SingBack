@@ -193,7 +193,7 @@ class AudioService:
                 str(vocal_path),
                 "-filter_complex",
                 (
-                    "[0:a]volume=0.55[bed];[1:a]volume=1.30[voice];"
+                    "[0:a]volume=0.72[bed];[1:a]volume=1.25[voice];"
                     "[bed][voice]amix=inputs=2:duration=first:dropout_transition=0:"
                     "normalize=0,"
                     "alimiter=limit=0.95[out]"

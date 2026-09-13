@@ -22,13 +22,22 @@ MANIFEST_PATH = ROOT / "assets" / "songs" / "manifest.json"
 MAX_WORDS_PER_LINE = 7
 MAX_LINE_SECONDS = 4.2
 LINE_BREAK_GAP_SECONDS = 0.65
+# Scribe labels this melodic intro as "[singing]" instead of spelling the
+# sound. Keep the human-audible cue so players know to reproduce it.
+LEADING_VOCALIZATIONS: dict[str, tuple[int, str]] = {
+    "one-such-a-night": (3559, "Ooh…"),
+}
 
 
 def clean_transcript(text: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"\[[^]]+]", "", text)).strip()
 
 
-def lyric_lines(transcript: TranscriptResult, duration_ms: int) -> list[dict[str, int | str]]:
+def lyric_lines(
+    transcript: TranscriptResult,
+    duration_ms: int,
+    leading_vocalization: tuple[int, str] | None = None,
+) -> list[dict[str, int | str]]:
     words = transcript.words
     if not words:
         return [{"startMs": 0, "endMs": duration_ms, "text": transcript.text or ""}]
@@ -50,13 +59,13 @@ def lyric_lines(transcript: TranscriptResult, duration_ms: int) -> list[dict[str
     if current:
         groups.append(current)
 
-    boundaries = [0]
+    boundaries = [leading_vocalization[0] if leading_vocalization else 0]
     for left, right in zip(groups, groups[1:]):
         midpoint_seconds = (float(left[-1]["end"]) + float(right[0]["start"])) / 2
         boundaries.append(max(boundaries[-1], min(duration_ms, round(midpoint_seconds * 1000))))
     boundaries.append(duration_ms)
 
-    return [
+    lines = [
         {
             "startMs": boundaries[index],
             "endMs": boundaries[index + 1],
@@ -64,6 +73,16 @@ def lyric_lines(transcript: TranscriptResult, duration_ms: int) -> list[dict[str
         }
         for index, group in enumerate(groups)
     ]
+    if leading_vocalization:
+        lines.insert(
+            0,
+            {
+                "startMs": 0,
+                "endMs": leading_vocalization[0],
+                "text": leading_vocalization[1],
+            },
+        )
+    return lines
 
 
 def main() -> None:
@@ -96,8 +115,18 @@ def main() -> None:
         return
 
     for song, transcript in updates:
-        song["expectedLyrics"] = clean_transcript(transcript.text or "")
-        song["lyricLines"] = lyric_lines(transcript, int(song["durationMs"]))
+        leading_vocalization = LEADING_VOCALIZATIONS.get(song["id"])
+        transcript_text = clean_transcript(transcript.text or "")
+        song["expectedLyrics"] = (
+            f"{leading_vocalization[1]} {transcript_text}"
+            if leading_vocalization
+            else transcript_text
+        )
+        song["lyricLines"] = lyric_lines(
+            transcript,
+            int(song["durationMs"]),
+            leading_vocalization,
+        )
     MANIFEST_PATH.write_text(
         json.dumps(songs, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

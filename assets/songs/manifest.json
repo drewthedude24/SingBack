@@ -85,10 +85,15 @@
     "fullMixUrl": "/media/songs/one-such-a-night/full.wav",
     "instrumentalPath": "assets/songs/one-such-a-night/instrumental.wav",
     "referenceVocalPath": "assets/songs/one-such-a-night/vocals.wav",
-    "expectedLyrics": "Like smitten by the moonlight, we shared that prayer",
+    "expectedLyrics": "Ooh… Like smitten by the moonlight, we shared that prayer",
     "lyricLines": [
       {
         "startMs": 0,
+        "endMs": 3559,
+        "text": "Ooh…"
+      },
+      {
+        "startMs": 3559,
         "endMs": 7639,
         "text": "Like smitten by the moonlight,"
       },
