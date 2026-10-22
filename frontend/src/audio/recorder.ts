@@ -3,6 +3,8 @@ const PREFERRED_MIME_TYPES = [
   "audio/webm",
   "audio/ogg;codecs=opus",
   "audio/ogg",
+  "audio/mp4;codecs=mp4a.40.2",
+  "audio/mp4",
 ];
 
 const EXTENSION_BY_MIME: Record<string, string> = {

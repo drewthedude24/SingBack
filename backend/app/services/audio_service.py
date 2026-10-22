@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import re
 import shutil
 import subprocess
 import wave
@@ -20,7 +19,8 @@ MIME_SUFFIXES = {
     "audio/mpeg": ".mp3",
     "audio/mp4": ".m4a",
 }
-_DURATION_PATTERN = re.compile(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)")
+PROBE_SAMPLE_RATE = 16_000
+MAX_RECORDING_MS = 30_000
 
 
 @dataclass(frozen=True)
@@ -122,11 +122,17 @@ class AudioService:
         return completed
 
     def _probe_duration_ms(self, path: Path) -> int:
+        # MediaRecorder often emits streaming WebM or fragmented MP4 without a
+        # container Duration field ("Duration: N/A"), especially on phones.
+        # Count decoded PCM samples instead of parsing that optional metadata.
+        # Bound the decode so a small compressed upload cannot expand forever.
         try:
             completed = subprocess.run(
-                [self.ffmpeg_bin, "-hide_banner", "-i", str(path), "-f", "null", "-"],
+                [self.ffmpeg_bin, "-hide_banner", "-loglevel", "error", "-i", str(path),
+                 "-map", "0:a:0", "-vn", "-sn", "-dn", "-af", "asetpts=N/SR/TB",
+                 "-t", "30.1", "-ar", str(PROBE_SAMPLE_RATE), "-ac", "1",
+                 "-c:a", "pcm_s16le", "-f", "s16le", "pipe:1"],
                 capture_output=True,
-                text=True,
                 timeout=self._settings.ffmpeg_timeout_seconds,
                 check=False,
             )
@@ -137,13 +143,17 @@ class AudioService:
                 "Audio processing is temporarily unavailable.",
                 retryable=True,
             ) from exc
-        match = _DURATION_PATTERN.search(completed.stderr)
-        if match is None:
+        if completed.returncode != 0 or not completed.stdout:
             raise ApiError(
-                422, "INVALID_AUDIO", "The upload has no readable audio duration."
+                422, "INVALID_AUDIO", "The recording contains no decodable audio. Please record your turn again."
             )
-        hours, minutes, seconds = match.groups()
-        return round((int(hours) * 3600 + int(minutes) * 60 + float(seconds)) * 1000)
+        # Signed 16-bit mono PCM has two bytes per sample, even for silence.
+        duration_ms = round(len(completed.stdout) / (PROBE_SAMPLE_RATE * 2) * 1000)
+        if duration_ms <= 0:
+            raise ApiError(422, "INVALID_AUDIO", "The recording contains no audio samples.")
+        if duration_ms > MAX_RECORDING_MS:
+            raise ApiError(400, "INVALID_RECORDING_DURATION", "Recordings must be 30 seconds or shorter.")
+        return duration_ms
 
     def _normalize_vocal(
         self, raw_path: Path, vocal_path: Path, offset_ms: int

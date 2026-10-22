@@ -7,10 +7,12 @@ report distinguishes overlapping background work from the final wait.
 import argparse
 import json
 import time
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
+from backend.app.services.audio_service import resolve_ffmpeg
 
 
 def main():
@@ -19,6 +21,7 @@ def main():
     parser.add_argument("--players", type=int, choices=range(2, 5), default=4)
     parser.add_argument("--turn-seconds", type=float, default=10)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--mobile-formats", action="store_true", help="Alternate streaming WebM/Opus and fragmented MP4/AAC uploads")
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[2]
     with httpx.Client(base_url=args.url.rstrip("/"), timeout=180) as client:
@@ -44,13 +47,25 @@ def main():
             request("POST", base + "/listened", member)
         fixture = (repository / "assets/songs" / song["id"] / "vocals.wav").read_bytes()
         uploads = []
+        formats = []
         started = time.perf_counter()
         for index, member in enumerate(members):
             time.sleep(max(0, args.turn_seconds))
+            mime, name, payload = "audio/wav", "public-song-fixture.wav", fixture
+            if args.mobile_formats:
+                if index % 2 == 0:
+                    mime, name = "audio/webm;codecs=opus", "mobile.webm"
+                    encoding = ["-c:a", "libopus", "-f", "webm"]
+                else:
+                    mime, name = "audio/mp4", "mobile.m4a"
+                    encoding = ["-c:a", "aac", "-movflags", "frag_keyframe+empty_moov+default_base_moof", "-f", "mp4"]
+                payload = subprocess.run([resolve_ffmpeg(None), "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
+                    *encoding, "pipe:1"], input=fixture, capture_output=True, check=True, timeout=20).stdout
+            formats.append(mime)
             before = time.perf_counter()
             room = request("POST", base + "/recordings", member,
-                data={"mimeType": "audio/wav", "prerollMs": "0", "durationMs": "10000"},
-                files={"file": ("public-song-fixture.wav", fixture, "audio/wav")})
+                data={"mimeType": mime, "prerollMs": "0", "durationMs": "10000"},
+                files={"file": (name, payload, mime)})
             uploads.append(round(time.perf_counter() - before, 3))
             print(f"Uploaded player {index + 1}/{args.players}: {uploads[-1]}s; {room['phase']}; {room['progress']['percent']}%", flush=True)
         wait_started = time.perf_counter()
@@ -79,6 +94,7 @@ def main():
         result = {"createdUtc": datetime.now(timezone.utc).isoformat(), "url": args.url,
             "players": args.players, "song": song["id"], "status": "passed", "health": health,
             "simulatedTurnSeconds": args.turn_seconds, "uploadSeconds": uploads,
+            "uploadFormats": formats,
             "waitAfterLastUploadSeconds": round(final_wait, 3),
             "totalRoundSeconds": round(time.perf_counter() - started, 3),
             "performances": [{"score": p["score"]["technicalTotal"], "feedbackSource": p["feedback"]["source"],

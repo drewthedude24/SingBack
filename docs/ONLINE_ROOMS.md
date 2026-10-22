@@ -83,3 +83,19 @@ the old completion-only placeholder score.
 No `.env` changes or new provider keys are required. Existing Gemini and
 ElevenLabs configuration is reused, and missing providers remain visibly labeled
 as partial analysis/offline coaching rather than pretending that API calls ran.
+
+## Mobile recording compatibility
+
+MediaRecorder can produce streaming WebM/Opus or fragmented MP4/AAC with no
+duration in its container header. The server measures actual decoded mono PCM
+samples instead of rejecting `Duration: N/A`. Decoding is capped at 30.1 seconds;
+recordings over 30 seconds and files with no decodable audio are still rejected.
+Safari's MP4 recording formats are explicitly included in client negotiation.
+
+Verify both formats through a complete deployed room using public fixtures:
+
+```bash
+python -m backend.scripts.verify_online_deployment https://singback.onrender.com --players 2 --turn-seconds 0 --mobile-formats
+```
+
+This exercises encoded fixtures, not an actual phone's microphone/permission UI.
