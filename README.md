@@ -1,6 +1,6 @@
 # SingBack
 
-SingBack is a local multiplayer song-memory party game built for HackRice 16.
+SingBack is a multiplayer song-memory party game built for HackRice 16.
 Players hear one ten-second clip a single time, then take turns singing it back
 from memory over the same instrumental. Once every turn is done, the game
 reveals each remix anonymously and scores how close it came to the original.
@@ -10,7 +10,7 @@ voice to the actual recorded vocal, so the feedback can tell you that you drifte
 flat on the second phrase rather than just that you missed a note.
 
 **[Play SingBack online](https://singback.onrender.com)** — no installation or API
-keys needed. Use a laptop browser and allow microphone access. The free server
+keys needed. Use a phone or computer browser and allow microphone access. The free server
 may take about a minute to wake up on the first visit after inactivity.
 
 ## Quickstart
@@ -48,11 +48,28 @@ proportionally rebalanced.
 
 ## How a round works
 
+### Friends on separate devices
+
+1. Open the live link and choose **Play online → Host a room**. Enter your name.
+2. Copy the invitation link or share the six-character room code.
+3. Friends open the link (or choose **Join a room**) and enter their own names.
+4. Each person taps **Enable mic & ready**; the host starts when all 2–4 players are ready.
+5. Everyone plays the reference once on their own device. Then each player
+   records on their own microphone when it is their turn. Headphones are recommended.
+6. Grading runs during subsequent turns; shared results open automatically.
+   Everyone can play the remixes, and the host can start another round in the same room.
+
+Refresh reconnects the same browser tab. A room code locates the lobby; a private
+per-device bearer token authorizes actions. Only the host can start, skip a missing
+player, remove someone in the lobby, or start a rematch. No API keys are sent to players.
+
+### Passing one device around
+
 1. Enter 1 to 4 player names.
 2. SingBack draws a random prepared ten-second clip. Everyone hears it once,
    with the lyrics on screen.
 3. Each player records in turn over the instrumental, passing one device around.
-4. Every take is aligned, mixed, and scored in parallel.
+4. Every take is aligned and mixed, then grading starts immediately in the background.
 5. Reveals stay locked until the last turn finishes, then play in randomized
    anonymous order.
 6. Scores, waveform and pitch evidence, and AI coaching for each performance.
@@ -79,6 +96,26 @@ plus both audio files and returns structured coaching text. If it fails, a
 threshold-based fallback writes the feedback and the scores are unchanged.
 
 ## Timing
+
+### Why grading is faster
+
+Song features are built into the deployment image and loaded from a content- and
+algorithm-versioned cache. Player pYIN uses 20-cent pitch bins instead of 10-cent
+bins, reducing its quadratic transition cost without changing the score weights.
+Scribe runs alongside signal extraction; Gemini requests do not hold the local
+CPU slot. Earlier players are analyzed during later turns, not all at the end.
+The free service limits simultaneous local DSP to one job to stay inside memory
+limits. Progress represents completed analysis stages, not elapsed-time guesses.
+
+Reproduce the local old/new analysis comparison with:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m backend.scripts.benchmark_grading
+```
+
+This does not measure hosting cold starts or third-party API latency.
+
+### Recording alignment
 
 `performance.now()` and `AudioContext.currentTime` are separate clocks with
 different origins, so one cannot be subtracted from the other. Each turn:
@@ -121,6 +158,9 @@ ElevenLabs for transcription and host narration.
 
 ## Known limits
 
-Sessions live in memory, so a page refresh ends the round. Play is single device,
-pass and play. The catalog is five prepared clips because Demucs cannot run
-inside a request.
+Rooms and sessions live in one server process, not a durable database. Online
+rooms reconnect after a page refresh but expire after six hours, and a server
+restart/deploy clears them and their recording files. A free-host cold start is
+separate from grading time. This is a small public demo, not horizontally scaled
+production infrastructure. Pass-and-play rounds do not reconnect on refresh.
+The catalog is five prepared clips because Demucs does not run inside a request.

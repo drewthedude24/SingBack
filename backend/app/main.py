@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHttpException
 
-from backend.app.api import health, sessions, songs
+from backend.app.api import health, rooms, sessions, songs
 from backend.app.config import Settings
 from backend.app.errors import ApiError, api_error_handler
 from backend.app.integrations.elevenlabs import ElevenLabsService
@@ -17,6 +19,8 @@ from backend.app.services.analysis_service import AnalysisService
 from backend.app.services.audio_service import AudioService
 from backend.app.services.session_service import SessionService
 from backend.app.services.song_catalog import SongCatalog
+from backend.app.services.room_service import RoomService
+from starlette.concurrency import run_in_threadpool
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -36,8 +40,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         max_workers=settings.max_analysis_workers,
     )
     session_service = SessionService(song_catalog, analysis_service)
+    room_service = RoomService(session_service, song_catalog, audio_service)
 
-    application = FastAPI(title="SingBack API", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(_):
+        yield
+        await run_in_threadpool(analysis_service.close)
+
+    application = FastAPI(title="SingBack API", version="0.2.0", lifespan=lifespan)
     application.state.settings = settings
     application.state.song_catalog = song_catalog
     application.state.audio_service = audio_service
@@ -45,6 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.gemini_service = gemini_service
     application.state.analysis_service = analysis_service
     application.state.session_service = session_service
+    application.state.room_service = room_service
 
     application.add_middleware(
         CORSMiddleware,
@@ -94,6 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health.router, prefix="/api")
     application.include_router(songs.router, prefix="/api")
     application.include_router(sessions.router, prefix="/api")
+    application.include_router(rooms.router, prefix="/api")
     application.mount(
         "/media/songs",
         StaticFiles(directory=settings.song_assets_root),

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+import hashlib
+import os
 import re
 import threading
 from dataclasses import dataclass
@@ -14,6 +16,10 @@ from backend.app.models import PerformanceEvidence, Score
 
 SAMPLE_RATE = 22_050
 HOP_LENGTH = 512
+# Twenty-cent bins retain musical intonation detail while reducing pYIN's
+# quadratic state-transition work versus the former ten-cent lattice.
+PITCH_RESOLUTION = 0.2
+FEATURE_VERSION = f"v2-sr{SAMPLE_RATE}-hop{HOP_LENGTH}-pyin{PITCH_RESOLUTION}"
 SCORE_WEIGHTS = {
     "pitch": 0.45,
     "rhythm": 0.25,
@@ -55,9 +61,13 @@ class ReferenceFeatures:
 class ScoringService:
     """Compute repeatable metrics; no generative model can modify these values."""
 
-    def __init__(self) -> None:
+    def __init__(self, cache_root: Path | None = None) -> None:
         self._reference_cache: dict[tuple[str, int, int], ReferenceFeatures] = {}
         self._reference_lock = threading.Lock()
+        self._cache_root = cache_root or Path(os.getenv(
+            "REFERENCE_CACHE_DIR", str(Path(__file__).resolve().parents[3] / "runtime/reference-features")
+        ))
+        self._cache_root.mkdir(parents=True, exist_ok=True)
 
     def prewarm_reference(self, path: Path) -> None:
         """Prepare immutable song features while players are listening/recording."""
@@ -81,17 +91,47 @@ class ScoringService:
             cached = self._reference_cache.get(cache_key)
             if cached is not None:
                 return cached
-            audio = self._load(resolved)
-            features = ReferenceFeatures(
-                audio=audio,
-                pitch=self._pitch(audio),
-                onsets=self._onsets(audio),
-            )
+            digest = hashlib.sha256(FEATURE_VERSION.encode() + resolved.read_bytes()).hexdigest()
+            feature_path = self._cache_root / f"{digest}.npz"
+            features = self._read_features(feature_path)
+            if features is None:
+                audio = self._load(resolved)
+                features = ReferenceFeatures(audio=audio, pitch=self._pitch(audio), onsets=self._onsets(audio))
+                self._write_features(feature_path, features)
             stale_keys = [key for key in self._reference_cache if key[0] == str(resolved)]
             for key in stale_keys:
                 self._reference_cache.pop(key, None)
             self._reference_cache[cache_key] = features
             return features
+
+    @staticmethod
+    def _read_features(path: Path) -> ReferenceFeatures | None:
+        try:
+            with np.load(path, allow_pickle=False) as data:
+                series = data["series"]
+                valid = series[np.isfinite(series)]
+                pitch = PitchAnalysis(
+                    contour=valid if valid.size >= 8 else None,
+                    confidence=str(data["confidence"].item()),
+                    voiced_seconds=float(data["voiced_seconds"].item()),
+                    mean_error_semitones=None, series=series,
+                )
+                return ReferenceFeatures(audio=data["audio"], pitch=pitch, onsets=data["onsets"])
+        except (OSError, ValueError, KeyError):
+            return None
+
+    @staticmethod
+    def _write_features(path: Path, features: ReferenceFeatures) -> None:
+        temporary = path.with_name(f".{path.stem}-{threading.get_ident()}.npz")
+        try:
+            np.savez_compressed(temporary, audio=features.audio,
+                series=features.pitch.series if features.pitch.series is not None else np.array([]),
+                confidence=features.pitch.confidence, voiced_seconds=features.pitch.voiced_seconds,
+                onsets=features.onsets)
+            temporary.replace(path)
+        except OSError:
+            # A read-only cache must not prevent a game from being graded.
+            temporary.unlink(missing_ok=True)
 
     def score(
         self,
@@ -118,19 +158,22 @@ class ScoringService:
         expected_lyrics: str,
         detected_lyrics: str | None,
         transcript_source: str,
+        player_features: ReferenceFeatures | None = None,
+        reference_features: ReferenceFeatures | None = None,
     ) -> ScoringResult:
-        reference_features = self.prepare_reference(reference_vocal_path)
+        reference_features = reference_features or self.prepare_reference(reference_vocal_path)
+        player_features = player_features or self.prepare_player(player_vocal_path)
         reference = reference_features.audio
-        player = self._load(player_vocal_path)
+        player = player_features.audio
 
         reference_pitch = reference_features.pitch
-        player_pitch = self._pitch(player)
+        player_pitch = player_features.pitch
         pitch_score, pitch_confidence, pitch_error = self._compare_pitch(
             reference_pitch, player_pitch
         )
 
         reference_rhythm = reference_features.onsets
-        player_rhythm = self._onsets(player)
+        player_rhythm = player_features.onsets
         rhythm_score, rhythm_confidence, rhythm_error = self._compare_rhythm(
             reference_rhythm, player_rhythm
         )
@@ -202,6 +245,7 @@ class ScoringService:
                 "playerOnsetCount": len(player_rhythm),
                 "lyricWordErrorRate": self._rounded(lyric_error),
                 "transcriptSource": transcript_source,
+                "pitchResolutionCents": round(PITCH_RESOLUTION * 100),
             },
         )
         return ScoringResult(
@@ -219,6 +263,10 @@ class ScoringService:
         audio, _ = librosa.load(path, sr=SAMPLE_RATE, mono=True, duration=10.0)
         return np.nan_to_num(audio.astype(np.float32), copy=False)
 
+    def prepare_player(self, path: Path) -> ReferenceFeatures:
+        audio = self._load(path)
+        return ReferenceFeatures(audio=audio, pitch=self._pitch(audio), onsets=self._onsets(audio))
+
     @staticmethod
     def _pitch(audio: np.ndarray) -> PitchAnalysis:
         if audio.size == 0 or float(np.max(np.abs(audio))) < 1e-4:
@@ -230,6 +278,7 @@ class ScoringService:
             sr=SAMPLE_RATE,
             frame_length=2048,
             hop_length=HOP_LENGTH,
+            resolution=PITCH_RESOLUTION,
         )
         valid = voiced & np.isfinite(f0)
         valid_count = int(np.count_nonzero(valid))

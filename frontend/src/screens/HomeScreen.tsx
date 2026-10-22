@@ -5,7 +5,7 @@ import { useGame } from "../game/GameProvider";
 
 type BackendStatus = "checking" | "online" | "offline";
 
-export function HomeScreen(): JSX.Element {
+export function HomeScreen({ onOnline }: { onOnline: () => void }): JSX.Element {
   const { micReady, micError, enableMicrophone, goToLobby, busy } = useGame();
   const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
 
@@ -42,6 +42,12 @@ export function HomeScreen(): JSX.Element {
         same instrumental. Nobody hears a remix until every turn is done.
       </p>
 
+      <div className="online-entry-card">
+        <h2>Friends on different devices?</h2>
+        <p>Create a private room and share the code. Each player sings from their own phone or computer.</p>
+        <button className="primary-button primary-button-large" onClick={onOnline}>Play online · Create or join room</button>
+      </div>
+
       <ol className="rules-list">
         <li>Choose 1–4 players; SingBack draws a mystery song.</li>
         <li>Listen closely &mdash; the reference clip only plays once.</li>
@@ -73,7 +79,7 @@ export function HomeScreen(): JSX.Element {
         disabled={!micReady || busy}
         onClick={goToLobby}
       >
-        Continue to Lobby
+        Play on one device
       </button>
     </section>
   );

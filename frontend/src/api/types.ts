@@ -156,3 +156,10 @@ export interface RecordingTiming {
   plannedPlaybackAudioSec: number;
   prerollMs: number;
 }
+
+export interface AnalysisProgress {
+  percent: number;
+  completedPlayers: number;
+  totalPlayers: number;
+  players: Array<{ playerId: string; displayName: string; percent: number; stage: string }>;
+}

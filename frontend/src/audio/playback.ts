@@ -80,4 +80,9 @@ export class InstrumentalPlayer {
       source.disconnect();
     }
   }
+
+  async close(): Promise<void> {
+    this.stop();
+    if (this.context.state !== "closed") await this.context.close();
+  }
 }

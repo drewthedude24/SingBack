@@ -1,5 +1,6 @@
 import type {
   ApiErrorBody,
+  AnalysisProgress,
   FinalResults,
   HealthStatus,
   NarrationCue,
@@ -34,7 +35,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, init);
@@ -101,6 +102,8 @@ export const api = {
     }),
   finalize: (sessionId: string) =>
     request<RevealResults>(`/api/sessions/${sessionId}/finalize`, { method: "POST" }),
+  analysisProgress: (sessionId: string) =>
+    request<AnalysisProgress>(`/api/sessions/${sessionId}/analysis-progress`),
   results: (sessionId: string) => request<RevealResults>(`/api/sessions/${sessionId}/results`),
   revealComplete: (sessionId: string, revealIds: string[]) =>
     request<SessionView>(

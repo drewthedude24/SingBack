@@ -22,7 +22,7 @@ from backend.app.models import (
     SongManifestEntry,
 )
 from backend.app.services.audio_service import AudioArtifact
-from backend.app.services.analysis_service import AnalysisService, PerformanceAnalysis
+from backend.app.services.analysis_service import AnalysisService, AnalysisJob, PerformanceAnalysis
 from backend.app.services.song_catalog import SongCatalog
 
 
@@ -32,6 +32,7 @@ class RecordingState:
     player_id: str
     artifact: AudioArtifact
     analysis: PerformanceAnalysis | None = None
+    job: AnalysisJob | None = None
 
 
 @dataclass
@@ -114,8 +115,10 @@ class SessionService:
     ) -> RecordingResponse:
         with self._lock:
             state = self.get(session_id)
+            self.active_player(session_id, player_id)
             recording = RecordingState(
-                id=str(uuid4()), player_id=player_id, artifact=artifact
+                id=str(uuid4()), player_id=player_id, artifact=artifact,
+                job=self._analysis_service.submit(state.song, artifact),
             )
             state.recordings[player_id] = recording
             if len(state.recordings) == len(state.players):
@@ -144,20 +147,26 @@ class SessionService:
     def finalize(self, session_id: str) -> RevealResults:
         with self._lock:
             state = self.get(session_id)
+            if state.phase is Phase.REVEAL:
+                return self.reveal_results(state)
             self._require_phase(state, Phase.PROCESSING)
             if len(state.recordings) != len(state.players):
                 raise ApiError(
                     409, "ARTIFACTS_NOT_READY", "Every player must upload a recording."
                 )
-            artifacts = {
-                player_id: recording.artifact
-                for player_id, recording in state.recordings.items()
-            }
+            jobs = {}
+            for player_id, recording in state.recordings.items():
+                if recording.job is None or (recording.job.future is not None and recording.job.future.done()
+                                             and recording.job.future.exception() is not None):
+                    recording.job = self._analysis_service.submit(state.song, recording.artifact)
+                jobs[player_id] = recording.job
 
-        analyses = self._analysis_service.analyze_many(state.song, artifacts)
+        analyses = {player_id: job.future.result() for player_id, job in jobs.items() if job.future is not None}
 
         with self._lock:
             state = self.get(session_id)
+            if state.phase is Phase.REVEAL:
+                return self.reveal_results(state)
             self._require_phase(state, Phase.PROCESSING)
             for player_id, analysis in analyses.items():
                 state.recordings[player_id].analysis = analysis
@@ -165,6 +174,18 @@ class SessionService:
             random.SystemRandom().shuffle(state.reveal_order)
             state.phase = Phase.REVEAL
             return self.reveal_results(state)
+
+    def analysis_progress(self, session_id: str) -> dict:
+        with self._lock:
+            state = self.get(session_id)
+            players = []
+            for player in state.players:
+                recording = state.recordings.get(player.id)
+                progress = recording.job.progress() if recording and recording.job else {"percent": 0, "stage": "waiting"}
+                players.append({"playerId": player.id, "displayName": player.display_name, **progress})
+            return {"percent": sum(player["percent"] for player in players) // len(players),
+                    "completedPlayers": sum(player["stage"] == "complete" for player in players),
+                    "totalPlayers": len(players), "players": players}
 
     def reveal_results(self, state: SessionState) -> RevealResults:
         if state.phase is not Phase.REVEAL:

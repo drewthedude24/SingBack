@@ -1,0 +1,40 @@
+.online-shell { max-width: 1200px; }
+.online-shell .app-wordmark small { font-size: .65rem; letter-spacing: .15em; color: #46efce; margin-left: .5rem; }
+.online-entry { max-width: 680px; margin: 0 auto; }
+.online-entry h1 { line-height: 1.05; }
+.online-tabs, .online-actions { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin: 1.5rem 0; }
+.online-form { display: grid; gap: 1.4rem; margin: 2rem 0; }
+.online-form label { display: grid; gap: .6rem; font-weight: 600; }
+.online-form input, .online-share input { width: 100%; min-width: 0; box-sizing: border-box; color: #f7f5ff; background: #171127; border: 1px solid #544279; border-radius: 12px; font: inherit; padding: 1rem; }
+.online-form input:focus, .online-share input:focus { outline: 2px solid #46efce; outline-offset: 3px; }
+.room-code-input { letter-spacing: .25em; text-transform: uppercase; }
+.online-room-bar { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: #bdb2d6; padding: .6rem 0 1.2rem; }
+.online-room-bar strong { letter-spacing: .15em; color: #46efce; margin-left: .4rem; }
+.online-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: .7rem; margin-bottom: 1.5rem; }
+.online-player { display: grid; gap: .35rem; border: 1px solid #44305f; background: #1b142d; border-radius: 14px; padding: 1rem; overflow-wrap: anywhere; }
+.online-player span { font-size: .85rem; color: #bdb2d6; }
+.online-player-active { border-color: #f4ce43; box-shadow: 0 0 24px #f4ce4315; }
+.online-code { display: inline-block; color: #46efce; letter-spacing: .12em; overflow-wrap: anywhere; }
+.online-share { display: flex; gap: .7rem; margin: 1.5rem 0; }
+.online-note { font-size: .9rem; color: #bdb2d6; line-height: 1.7; }
+.online-alert { border: 1px solid #e0ad55; border-radius: 12px; background: #302138; padding: 1rem 1.3rem; overflow-wrap: anywhere; }
+.online-text-button { color: #bdb2d6; background: transparent; border: none; text-decoration: underline; text-underline-offset: .2em; padding: .8rem 0; font: inherit; cursor: pointer; }
+.online-text-button:disabled { opacity: .5; cursor: wait; }
+.online-progress-list { padding: 0; list-style: none; }
+.online-progress-list li { display: flex; gap: 1rem; justify-content: space-between; border-bottom: 1px solid #352747; padding: .85rem 0; }
+.online-progress-list li span:last-child { color: #46efce; text-align: right; }
+.online-waiting-wave { display: flex; height: 90px; align-items: center; justify-content: center; gap: 8px; margin: 2rem 0; }
+.online-waiting-wave span { display: block; width: 8px; height: 60px; border-radius: 8px; background: linear-gradient(#46efce, #af7ded); animation: online-wave 1.2s ease-in-out infinite alternate; }
+@keyframes online-wave { from { transform: scaleY(.2); opacity: .4; } to { transform: scaleY(1); opacity: 1; } }
+.online-entry-card { margin: 1.5rem 0; border: 1px solid #46efce70; border-radius: 20px; padding: 1.5rem; background: linear-gradient(120deg, #192b38, #281c42); }
+.online-entry-card h2 { margin-top: 0; }
+@media (max-width: 600px) {
+  .online-shell .app-header { gap: .7rem; }
+  .online-shell .app-header .secondary-button { padding: .65rem .8rem; }
+  .online-stage h1 { font-size: clamp(2rem, 9vw, 3.5rem); }
+  .online-share { flex-direction: column; }
+  .online-actions > button, .online-tabs > button { flex: 1; }
+  .online-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .online-progress-list { font-size: .85rem; }
+}
+@media (prefers-reduced-motion: reduce) { .online-waiting-wave span { animation: none; } }

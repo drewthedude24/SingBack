@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
+from starlette.concurrency import run_in_threadpool
 
 from backend.app.errors import ApiError
 from backend.app.models import (
@@ -129,7 +130,7 @@ async def upload_recording(
     instrumental_path = request.app.state.song_catalog.asset_path(
         state.song.instrumental_path
     )
-    artifact = request.app.state.audio_service.process_recording(
+    artifact = await run_in_threadpool(request.app.state.audio_service.process_recording,
         session_id=session_id,
         player_id=player_id,
         upload_bytes=upload_bytes,
@@ -138,6 +139,11 @@ async def upload_recording(
         preroll_ms=preroll_ms,
     )
     return session_service.add_recording(session_id, player_id, artifact)
+
+
+@router.get("/{session_id}/analysis-progress")
+def analysis_progress(session_id: str, request: Request) -> dict:
+    return request.app.state.session_service.analysis_progress(session_id)
 
 
 @router.post(

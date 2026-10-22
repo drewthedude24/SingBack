@@ -1,4 +1,6 @@
 import { ErrorBanner } from "./components/ErrorBanner";
+import { useState } from "react";
+import { OnlineGame, savedMembership } from "./online/OnlineGame";
 import { PlayerChip } from "./components/PlayerChip";
 import { GameProvider, useGame } from "./game/GameProvider";
 import { CountdownScreen } from "./screens/CountdownScreen";
@@ -13,12 +15,12 @@ import { RevealScreen } from "./screens/RevealScreen";
 import { TurnIntroScreen } from "./screens/TurnIntroScreen";
 import { UploadingScreen } from "./screens/UploadingScreen";
 
-function CurrentScreen(): JSX.Element {
+function CurrentScreen({ onOnline }: { onOnline: () => void }): JSX.Element {
   const { stage } = useGame();
 
   switch (stage) {
     case "home":
-      return <HomeScreen />;
+      return <HomeScreen onOnline={onOnline} />;
     case "lobby":
       return <LobbyScreen />;
     case "listen":
@@ -40,7 +42,7 @@ function CurrentScreen(): JSX.Element {
     case "results":
       return <ResultsScreen />;
     default:
-      return <HomeScreen />;
+      return <HomeScreen onOnline={onOnline} />;
   }
 }
 
@@ -60,7 +62,7 @@ function PlayerRoster(): JSX.Element | null {
   );
 }
 
-function AppShell(): JSX.Element {
+function AppShell({ onOnline }: { onOnline: () => void }): JSX.Element {
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -69,16 +71,18 @@ function AppShell(): JSX.Element {
       </header>
       <ErrorBanner />
       <main className="app-main">
-        <CurrentScreen />
+        <CurrentScreen onOnline={onOnline} />
       </main>
     </div>
   );
 }
 
 export function App(): JSX.Element {
+  const [online, setOnline] = useState(() => new URLSearchParams(location.search).has("room") || savedMembership() !== null);
+  if (online) return <OnlineGame onExit={() => setOnline(false)} />;
   return (
     <GameProvider>
-      <AppShell />
+      <AppShell onOnline={() => setOnline(true)} />
     </GameProvider>
   );
 }

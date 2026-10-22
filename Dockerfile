@@ -13,6 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     MAX_ANALYSIS_WORKERS=1 \
     NUMBA_CPU_NAME=generic \
     NUMBA_CACHE_DIR=/app/.cache/numba \
+    REFERENCE_CACHE_DIR=/app/.cache/references \
     MPLCONFIGDIR=/app/.cache/matplotlib \
     OPENBLAS_NUM_THREADS=1 \
     OMP_NUM_THREADS=1
@@ -31,6 +32,6 @@ RUN mkdir -p runtime .cache/numba .cache/matplotlib \
 USER singback
 # Compile pitch, onset and DTW kernels during the build. Generic CPU code keeps
 # this cache reusable when Render builds and runs on different x86 processors.
-RUN python -c "from pathlib import Path; from backend.app.scoring.service import ScoringService; p=Path('assets/songs/summer-day/vocals.wav'); ScoringService().analyze(reference_vocal_path=p, player_vocal_path=p, expected_lyrics='ooh', detected_lyrics='ooh', transcript_source='elevenlabs')"
+RUN python -m backend.scripts.prepare_reference_features
 EXPOSE 10000
 CMD ["sh", "-c", "exec uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1 --timeout-keep-alive 30"]

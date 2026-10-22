@@ -2,11 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { HostNarration } from "../components/HostNarration";
 import { useGame } from "../game/GameProvider";
+import { api } from "../api/client";
+import type { AnalysisProgress } from "../api/types";
 
 export function ProcessingScreen(): JSX.Element {
   const { session, retryProcessing, error, busy } = useGame();
   const startedRef = useRef(false);
-  const [progress, setProgress] = useState(6);
+  const [progress, setProgress] = useState(0);
+  const [analysis, setAnalysis] = useState<AnalysisProgress | null>(null);
 
   const finishProgress = useCallback(async () => {
     setProgress(100);
@@ -20,31 +23,30 @@ export function ProcessingScreen(): JSX.Element {
   }, [finishProgress, retryProcessing]);
 
   useEffect(() => {
-    const startedAt = performance.now();
-    const timer = window.setInterval(() => {
-      const elapsedMs = performance.now() - startedAt;
-      let estimated: number;
-      if (elapsedMs < 700) {
-        estimated = 6 + (elapsedMs / 700) * 34;
-      } else if (elapsedMs < 2_200) {
-        estimated = 40 + ((elapsedMs - 700) / 1_500) * 25;
-      } else if (elapsedMs < 5_000) {
-        estimated = 65 + ((elapsedMs - 2_200) / 2_800) * 20;
-      } else {
-        estimated = Math.min(96, 85 + ((elapsedMs - 5_000) / 8_000) * 11);
-      }
-      setProgress((current) => (current >= 100 ? current : Math.max(current, estimated)));
-    }, 100);
-    return () => window.clearInterval(timer);
-  }, []);
+    if (!session) return;
+    let cancelled = false;
+    let timer = 0;
+    const poll = async () => {
+      try {
+        const result = await api.analysisProgress(session.id);
+        if (!cancelled) {
+          setAnalysis(result);
+          setProgress((current) => Math.max(current, result.percent));
+        }
+      } catch { /* The finalize request reports actionable errors. */ }
+      if (!cancelled) timer = window.setTimeout(() => void poll(), 800);
+    };
+    void poll();
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [session?.id]);
 
   const status = useMemo(() => {
     if (progress >= 100) return "Every performance is ready";
-    if (progress < 30) return "Preparing and aligning each vocal";
-    if (progress < 58) return "Tracing pitch, rhythm, and completion";
-    if (progress < 78) return "Checking remembered lyrics";
-    return "Asking the AI coach for grounded feedback";
-  }, [progress]);
+    if (analysis?.players.some((player) => player.stage === "audio")) return "Measuring pitch, rhythm, and completion";
+    if (analysis?.players.some((player) => player.stage === "feedback")) return "Gemini is reviewing the performances";
+    if (analysis?.players.some((player) => player.stage === "transcription")) return "Checking remembered lyrics with Scribe";
+    return "Preparing the next performance for analysis";
+  }, [progress, analysis]);
 
   return (
     <section className="screen processing-screen">
@@ -62,7 +64,7 @@ export function ProcessingScreen(): JSX.Element {
       <div
         className="processing-progress"
         role="progressbar"
-        aria-label="Estimated processing progress"
+        aria-label="Completed analysis stages"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(progress)}
@@ -73,7 +75,8 @@ export function ProcessingScreen(): JSX.Element {
         <strong>{Math.round(progress)}%</strong>
       </div>
       <p className="processing-estimate">
-        {progress >= 100 ? "Analysis complete · opening the reveal" : "Estimated progress · external AI response time can vary"}
+        {progress >= 100 ? "Analysis complete · opening the reveal" :
+          `${analysis?.completedPlayers ?? 0} of ${analysis?.totalPlayers ?? session?.players.length ?? 1} performances ready · progress reflects completed stages`}
       </p>
       {session ? <HostNarration sessionId={session.id} cue="processing" /> : null}
       {error && !busy ? (
