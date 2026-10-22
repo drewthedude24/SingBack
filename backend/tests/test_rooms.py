@@ -68,12 +68,17 @@ def test_multidevice_round_auth_turns_results_and_rematch(client: TestClient, vo
     host, guest = create(client), None
     guest = join(client, host)
     ready_and_start(client, [host, guest])
+    internal_id = client.app.state.room_service._rooms[host["code"]].session_id
+    assert client.get(f"/api/sessions/{internal_id}").status_code == 403
+    assert client.post(f"/api/sessions/{internal_id}/reference-complete").status_code == 403
     assert client.post(f"/api/rooms/{host['code']}/join", json={"displayName": "Late"}).status_code == 409
     form = {"mimeType": "audio/wav", "prerollMs": "0", "durationMs": "1200"}
     def upload(member, content=vocal_wav):
         return action(client, member, "recordings", data=form, files={"file": ("take.wav", content, "audio/wav")})
     assert upload(guest).status_code == 409  # Cannot submit someone else's turn.
-    assert upload(host, b"not audio").status_code == 422  # Reservation is released on failure.
+    invalid = upload(host, b"not audio")
+    assert invalid.status_code == 422  # Reservation is released on failure.
+    assert internal_id not in invalid.text
     first = upload(host)
     assert first.status_code == 200, first.text
     assert first.json()["currentPlayerId"] == guest["room"]["meId"]

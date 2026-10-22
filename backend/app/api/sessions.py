@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 from backend.app.errors import ApiError
@@ -17,7 +17,13 @@ from backend.app.models import (
     SessionView,
 )
 
-router = APIRouter(prefix="/sessions", tags=["sessions"])
+def require_pass_and_play(request: Request) -> None:
+    session_id = request.path_params.get("session_id")
+    if session_id and request.app.state.session_service.get(session_id).private:
+        raise ApiError(403, "ROOM_TOKEN_REQUIRED", "Online games must be accessed through their authenticated room.")
+
+
+router = APIRouter(prefix="/sessions", tags=["sessions"], dependencies=[Depends(require_pass_and_play)])
 
 
 @router.post(

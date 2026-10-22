@@ -107,7 +107,7 @@ class RoomService:
             songs = [song for song in self._catalog.all_public() if song.ready]
             if not songs:
                 raise ApiError(409, "NO_SONGS", "No playable songs are available.")
-            session = self._sessions.create([p.name for p in room.players], secrets.choice(songs).id)
+            session = self._sessions.create([p.name for p in room.players], secrets.choice(songs).id, private=True)
             room.session_id = session.id
             room.round_number += 1
             room.error = None

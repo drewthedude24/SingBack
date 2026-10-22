@@ -110,6 +110,10 @@ async def upload(code: str, request: Request, token: Token,
             session_id=session_id, player_id=player_id, upload_bytes=data, mime_type=mime_type,
             instrumental_path=instrumental, preroll_ms=preroll_ms)
         return service.finish_upload(code, token, artifact)
+    except ApiError as exc:
+        service.cancel_upload(code, token)
+        # Decoder stderr can contain internal filesystem paths/session UUIDs.
+        raise ApiError(exc.status_code, exc.code, exc.message, retryable=exc.retryable) from exc
     except BaseException:
         service.cancel_upload(code, token)
         raise

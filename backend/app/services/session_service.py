@@ -40,6 +40,7 @@ class SessionState:
     id: str
     song: SongManifestEntry
     players: list[PlayerPublic]
+    private: bool = False
     phase: Phase = Phase.LOBBY
     current_player_index: int = 0
     recordings: dict[str, RecordingState] = field(default_factory=dict)
@@ -56,7 +57,7 @@ class SessionService:
         self._sessions: dict[str, SessionState] = {}
         self._lock = threading.RLock()
 
-    def create(self, player_names: list[str], song_id: str) -> SessionView:
+    def create(self, player_names: list[str], song_id: str, *, private: bool = False) -> SessionView:
         song = self._song_catalog.get(song_id)
         if not self._song_catalog.is_ready(song):
             raise ApiError(
@@ -65,6 +66,7 @@ class SessionService:
         state = SessionState(
             id=str(uuid4()),
             song=song,
+            private=private,
             players=[
                 PlayerPublic(id=str(uuid4()), displayName=name, turnOrder=index)
                 for index, name in enumerate(player_names)
