@@ -1,7 +1,10 @@
 # Online rooms
 
 Open https://singback.onrender.com and choose **Play online**. One person hosts;
-friends join with the invitation link or six-character code. Each person enables
+friends scan the lobby QR code with their phone camera, open the invitation link,
+or enter the six-character code. The QR is generated in the browser from the same
+public invitation link; it contains no member tokens and uses no third-party QR
+image service. Each person enables
 their own microphone and marks themselves ready. The host starts a mystery song.
 Everyone listens on their device; then the server enforces one recording turn at
 a time. Players see shared results automatically. Headphones prevent instrumental

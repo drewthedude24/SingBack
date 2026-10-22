@@ -18,6 +18,12 @@
 .online-player span { font-size: .85rem; color: #bdb2d6; }
 .online-player-active { border-color: #f4ce43; box-shadow: 0 0 24px #f4ce4315; }
 .online-code { display: inline-block; color: #46efce; letter-spacing: .12em; overflow-wrap: anywhere; }
+.online-invite { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: 1.5rem; align-items: center; width: 100%; padding: 1.25rem; border: 1px solid #44305f; border-radius: 20px; background: #1b142d; }
+.online-qr { width: 224px; height: 224px; padding: 12px; border-radius: 14px; background: #fff; }
+.online-qr svg { display: block; width: 200px; height: 200px; }
+.online-invite-details { min-width: 0; }
+.online-invite-details h2 { margin: 0 0 .6rem; }
+.online-invite-details p { margin: .6rem 0; line-height: 1.6; }
 .online-share { display: flex; width: 100%; gap: .7rem; margin: 1.5rem 0; }
 .online-share input { flex: 1; }
 .online-share button { flex-shrink: 0; white-space: nowrap; }
@@ -38,6 +44,8 @@
   .online-shell .app-header .secondary-button { padding: .65rem .8rem; }
   .online-stage h1 { font-size: clamp(2rem, 9vw, 3.5rem); }
   .online-share { flex-direction: column; }
+  .online-invite { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 1rem; }
+  .online-invite-details { width: 100%; }
   .online-actions > button, .online-tabs > button { flex: 1; }
   .online-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .online-progress-list { font-size: .85rem; }

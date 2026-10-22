@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 import { ApiRequestError, mediaUrl } from "../api/client";
 import type { NarrationCue, NarrationResponse, SessionSong } from "../api/types";
@@ -211,9 +212,20 @@ export function OnlineGame({ onExit }: { onExit: () => void }): JSX.Element {
         <section className="screen online-stage">
           {room.phase === "LOBBY" ? <>
             <p className="eyebrow">Bring your people</p><h1>Room <span className="online-code">{room.code}</span></h1>
-            <p>Send this link to your friends, or ask them to tap Play online and enter the room code.</p>
-            <div className="online-share"><input aria-label="Room invitation link" value={shareLink} readOnly onFocus={(event) => event.target.select()} />
-              <button className="secondary-button" onClick={() => void navigator.clipboard?.writeText(shareLink).then(() => setCopied(true)).catch(() => setCopied(false))}>{copied ? "Copied!" : "Copy link"}</button></div>
+            <div className="online-invite" aria-label="Invite friends to this room">
+              <div className="online-qr">
+                <QRCodeSVG value={shareLink} size={200} level="M" marginSize={4}
+                  bgColor="#ffffff" fgColor="#000000" role="img"
+                  title={`Scan to join SingBack room ${room.code}`} />
+              </div>
+              <div className="online-invite-details">
+                <h2>Scan to join</h2>
+                <p>Point your phone camera at this QR code, tap the link, and enter your name. No app needed.</p>
+                <div className="online-share"><input aria-label="Room invitation link" value={shareLink} readOnly onFocus={(event) => event.target.select()} />
+                  <button className="secondary-button" onClick={() => void navigator.clipboard?.writeText(shareLink).then(() => setCopied(true)).catch(() => setCopied(false))}>{copied ? "Copied!" : "Copy link"}</button></div>
+                <p className="online-note">Or open SingBack, choose Join a room, and enter <strong>{room.code}</strong>.</p>
+              </div>
+            </div>
             <div className="online-actions"><button className={me?.ready ? "secondary-button" : "primary-button"} disabled={busy} onClick={() => void ready()}>{me?.ready ? "Ready ✓ · change" : "Enable mic & ready"}</button>
               {me?.isHost ? <button className="primary-button primary-button-large" disabled={busy || room.players.length < 2 || room.players.some((p) => !p.ready)} onClick={() => void action(() => rooms.action(member, "start"))}>Start mystery song</button> : <p>The host starts once everyone is ready.</p>}</div>
             <p className="online-note">Everyone listens once on their own device, then takes a turn. Stay on this page; refresh reconnects you to the same room.</p>
