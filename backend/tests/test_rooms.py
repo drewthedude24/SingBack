@@ -94,6 +94,8 @@ def test_multidevice_round_auth_turns_results_and_rematch(client: TestClient, vo
     for performance in room["results"]["performances"]:
         assert performance["mixUrl"].startswith(f"/api/rooms/{host['code']}/mixes/")
         assert client.get(performance["mixUrl"]).status_code == 200
+        session_player_id = performance["mixUrl"].split("/")[-2]
+        assert client.get(f"/media/sessions/{internal_id}/{session_player_id}/mix.mp3").status_code == 404
         assert len(performance["evidence"]["playerWaveform"]) == 180
     assert action(client, guest, "rematch").status_code == 403
     assert action(client, host, "rematch").json()["phase"] == "LOBBY"

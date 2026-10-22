@@ -117,9 +117,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         StaticFiles(directory=settings.song_assets_root),
         name="song-media",
     )
+    class SessionMedia(StaticFiles):
+        async def get_response(self, path, scope):
+            session_id = path.split("/", 1)[0]
+            try:
+                state = session_service.get(session_id)
+            except ApiError:
+                state = None
+            if state is not None and state.private:
+                raise StarletteHttpException(status_code=404)
+            return await super().get_response(path, scope)
+
     application.mount(
         "/media/sessions",
-        StaticFiles(directory=settings.session_media_root),
+        SessionMedia(directory=settings.session_media_root),
         name="session-media",
     )
     application.mount(
