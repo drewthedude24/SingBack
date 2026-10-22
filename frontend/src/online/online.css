@@ -1,9 +1,12 @@
-.online-shell { max-width: 1200px; }
+.online-shell { max-width: 1200px; margin: 0 auto; }
+.online-shell .app-main { display: block; width: 100%; max-width: 1040px; margin: 0 auto; }
+.online-shell .screen { max-width: none; }
+.online-shell .online-entry { max-width: 680px; }
 .online-shell .app-wordmark small { font-size: .65rem; letter-spacing: .15em; color: #46efce; margin-left: .5rem; }
 .online-entry { max-width: 680px; margin: 0 auto; }
 .online-entry h1 { line-height: 1.05; }
 .online-tabs, .online-actions { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin: 1.5rem 0; }
-.online-form { display: grid; gap: 1.4rem; margin: 2rem 0; }
+.online-form { display: grid; width: 100%; gap: 1.4rem; margin: 2rem 0; }
 .online-form label { display: grid; gap: .6rem; font-weight: 600; }
 .online-form input, .online-share input { width: 100%; min-width: 0; box-sizing: border-box; color: #f7f5ff; background: #171127; border: 1px solid #544279; border-radius: 12px; font: inherit; padding: 1rem; }
 .online-form input:focus, .online-share input:focus { outline: 2px solid #46efce; outline-offset: 3px; }
@@ -15,7 +18,9 @@
 .online-player span { font-size: .85rem; color: #bdb2d6; }
 .online-player-active { border-color: #f4ce43; box-shadow: 0 0 24px #f4ce4315; }
 .online-code { display: inline-block; color: #46efce; letter-spacing: .12em; overflow-wrap: anywhere; }
-.online-share { display: flex; gap: .7rem; margin: 1.5rem 0; }
+.online-share { display: flex; width: 100%; gap: .7rem; margin: 1.5rem 0; }
+.online-share input { flex: 1; }
+.online-share button { flex-shrink: 0; white-space: nowrap; }
 .online-note { font-size: .9rem; color: #bdb2d6; line-height: 1.7; }
 .online-alert { border: 1px solid #e0ad55; border-radius: 12px; background: #302138; padding: 1rem 1.3rem; overflow-wrap: anywhere; }
 .online-text-button { color: #bdb2d6; background: transparent; border: none; text-decoration: underline; text-underline-offset: .2em; padding: .8rem 0; font: inherit; cursor: pointer; }
