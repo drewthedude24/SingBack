@@ -1,20 +1,31 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from backend.app.config import Settings
 from backend.app.models import Feedback, Score
 
+logger = logging.getLogger(__name__)
+
 
 class GeminiFeedbackPayload(BaseModel):
-    summary: str = Field(max_length=120)
-    strength: str = Field(max_length=100)
-    improvement: str = Field(max_length=100)
-    announcer_line: str = Field(max_length=140)
-    tags: list[str] = Field(max_length=3)
+    summary: str
+    strength: str
+    improvement: str
+    announcer_line: str
+    tags: list[str]
+
+
+def concise(text: str, limit: int) -> str:
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    prefix = text[: limit - 1]
+    return (prefix.rsplit(" ", 1)[0] if " " in prefix else prefix) + "…"
 
 
 class GeminiFeedbackService:
@@ -54,7 +65,9 @@ class GeminiFeedbackService:
                 "deterministic measurements. Compare the attached reference vocal and player "
                 "vocal for phrasing, confidence, and delivery. Never create, revise, or "
                 "contradict numeric scores. Cite concrete audible evidence, be supportive, "
-                "playful, and concise. Do not quote more lyrics "
+                "playful, and concise. Keep the summary under 120 characters, strength and "
+                "improvement under 100 characters each, announcer line under 140 characters, "
+                "and at most three tags. Do not quote more lyrics "
                 "than the short phrases already supplied. Measurements:\n"
                 + json.dumps(measurements, separators=(",", ":"))
             )
@@ -79,21 +92,29 @@ class GeminiFeedbackService:
                     response_mime_type="application/json",
                     response_schema=GeminiFeedbackPayload,
                     temperature=0.35,
-                    max_output_tokens=220,
+                    # The output limit includes reasoning tokens. With the old
+                    # 220-token limit Flash stopped before completing its JSON.
+                    max_output_tokens=512,
+                    thinking_config=(
+                        types.ThinkingConfig(thinking_budget=0)
+                        if self._model.startswith("gemini-2.5-flash")
+                        else None
+                    ),
                 ),
             )
             payload = response.parsed
             if not isinstance(payload, GeminiFeedbackPayload):
                 payload = GeminiFeedbackPayload.model_validate_json(response.text or "")
             return Feedback(
-                summary=payload.summary,
-                strength=payload.strength,
-                improvement=payload.improvement,
-                announcerLine=payload.announcer_line,
-                tags=payload.tags,
+                summary=concise(payload.summary, 120),
+                strength=concise(payload.strength, 100),
+                improvement=concise(payload.improvement, 100),
+                announcerLine=concise(payload.announcer_line, 140),
+                tags=payload.tags[:3],
                 source="gemini",
             )
-        except Exception:
+        except Exception as exc:
+            logger.warning("Gemini feedback unavailable (%s)", type(exc).__name__)
             return self._fallback(score)
 
     @staticmethod

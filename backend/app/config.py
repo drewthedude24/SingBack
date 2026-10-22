@@ -13,6 +13,9 @@ class Settings:
     runtime_root: Path = REPOSITORY_ROOT / "runtime"
     max_upload_bytes: int = 20 * 1024 * 1024
     ffmpeg_timeout_seconds: int = 45
+    max_analysis_workers: int = field(
+        default_factory=lambda: max(1, min(4, int(os.getenv("MAX_ANALYSIS_WORKERS", "4"))))
+    )
     ffmpeg_bin: str | None = field(default_factory=lambda: os.getenv("FFMPEG_BIN"))
     gemini_api_key: str | None = field(
         default_factory=lambda: os.getenv("GEMINI_API_KEY") or None
@@ -47,6 +50,10 @@ class Settings:
     @property
     def song_manifest_path(self) -> Path:
         return self.repository_root / "assets" / "songs" / "manifest.json"
+
+    @property
+    def frontend_dist_root(self) -> Path:
+        return self.repository_root / "frontend" / "dist"
 
     @property
     def song_assets_root(self) -> Path:
