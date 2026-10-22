@@ -11,6 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PORT=10000 \
     MAX_ANALYSIS_WORKERS=1 \
+    NUMBA_CPU_NAME=generic \
     NUMBA_CACHE_DIR=/app/.cache/numba \
     MPLCONFIGDIR=/app/.cache/matplotlib \
     OPENBLAS_NUM_THREADS=1 \
@@ -28,7 +29,8 @@ COPY --from=frontend /build/frontend/dist/ frontend/dist/
 RUN mkdir -p runtime .cache/numba .cache/matplotlib \
     && chown -R singback:singback runtime .cache
 USER singback
-# Populate Numba's disk cache during the build, before a recruiter's first game.
-RUN python -c "from pathlib import Path; from backend.app.scoring.service import ScoringService; ScoringService().prepare_reference(Path('assets/songs/summer-day/vocals.wav'))"
+# Compile pitch, onset and DTW kernels during the build. Generic CPU code keeps
+# this cache reusable when Render builds and runs on different x86 processors.
+RUN python -c "from pathlib import Path; from backend.app.scoring.service import ScoringService; p=Path('assets/songs/summer-day/vocals.wav'); ScoringService().analyze(reference_vocal_path=p, player_vocal_path=p, expected_lyrics='ooh', detected_lyrics='ooh', transcript_source='elevenlabs')"
 EXPOSE 10000
 CMD ["sh", "-c", "exec uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1 --timeout-keep-alive 30"]

@@ -45,6 +45,8 @@ jobs:
           curl --fail --silent http://127.0.0.1:10000/ | grep -q '<div id="root">'
           curl --fail --silent http://127.0.0.1:10000/api/songs | python -c 'import json,sys; songs=json.load(sys.stdin); assert len(songs)==5 and all(song["ready"] for song in songs)'
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:10000/.env)" = 404
+      - name: Exercise audio scoring in the Linux container
+        run: docker exec singback pytest -q -p no:cacheprovider backend/tests
       - name: Container logs
         if: always()
         run: docker logs singback || true

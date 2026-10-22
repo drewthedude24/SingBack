@@ -18,7 +18,9 @@ keys enable the existing local fallbacks.
 
 The free deployment uses `MAX_ANALYSIS_WORKERS=1` to bound memory consumption
 across rounds. The local default remains four. The container prepares Numba's
-disk cache during its build and uses system FFmpeg. Demucs is not needed at
+disk cache for pitch, rhythm and DTW during its build, using portable CPU code
+so the build cache also works on Render's runtime servers. It uses system
+FFmpeg. Demucs is not needed at
 runtime because all five song stems are included.
 
 Free Render instances sleep after inactivity, so the first visit may show a
