@@ -9,6 +9,10 @@ Unlike karaoke apps that grade you against a note chart, SingBack compares your
 voice to the actual recorded vocal, so the feedback can tell you that you drifted
 flat on the second phrase rather than just that you missed a note.
 
+**[Play SingBack online](https://singback.onrender.com)** — no installation or API
+keys needed. Use a laptop browser and allow microphone access. The free server
+may take about a minute to wake up on the first visit after inactivity.
+
 ## Quickstart
 
 For a public HTTPS demo, see [deployment instructions](docs/DEPLOYMENT.md).
@@ -38,7 +42,9 @@ Open <http://localhost:5173>. API docs are at <http://127.0.0.1:8000/docs>.
 
 **API keys are optional.** Gemini and ElevenLabs both have local fallbacks, so a
 full round completes with an empty `.env`. Keys add spoken host narration, lyric
-transcription, and richer coaching text. They never affect the numeric scores.
+transcription, and richer coaching text. Gemini never changes the numeric score.
+Without transcription, lyric scoring is unavailable and the other weights are
+proportionally rebalanced.
 
 ## How a round works
 
