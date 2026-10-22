@@ -21,15 +21,20 @@ export function savedMembership(): Membership | null {
 
 function Narrator({ member, cue, turnKey }: { member: Membership; cue: NarrationCue; turnKey: string }): JSX.Element | null {
   const [narration, setNarration] = useState<NarrationResponse | null>(null);
+  const audio = useRef<HTMLAudioElement>(null);
   useEffect(() => {
     let active = true;
     void rooms.narration(member, cue).then((value) => { if (active) setNarration(value); }).catch(() => {});
     return () => { active = false; };
   }, [member, cue, turnKey]);
+  useEffect(() => {
+    const element = audio.current;
+    return () => { element?.pause(); };
+  }, [narration?.audioUrl]);
   if (!narration) return null;
   return <aside className="host-narration">
     <div><span className="host-narration-label">{narration.source === "elevenlabs" ? "ElevenLabs game host" : "Game host"}</span><p>{narration.text}</p></div>
-    {narration.audioUrl ? <audio controls src={mediaUrl(narration.audioUrl)} aria-label="Play host narration" /> : null}
+    {narration.audioUrl ? <audio ref={audio} controls src={mediaUrl(narration.audioUrl)} aria-label="Play host narration" /> : null}
   </aside>;
 }
 

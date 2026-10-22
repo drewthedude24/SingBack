@@ -101,7 +101,7 @@ export function OnlineRecording({ member, song, onUploaded }: {
         await new Promise((resolve) => window.setTimeout(resolve, 1000));
         if (!active.current) return;
       }
-      const current = new TurnRecorder(stream.current);
+      const current = new TurnRecorder(stream.current, engine.current.audioContext);
       recorder.current = current;
       const started = await current.start();
       if (!active.current) return;

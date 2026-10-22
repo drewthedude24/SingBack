@@ -51,9 +51,11 @@ export class TurnRecorder {
   private resolveStarted!: (value: number) => void;
   private analyserContext: AudioContext | null = null;
   private analyserNode: AnalyserNode | null = null;
+  private analyserSource: MediaStreamAudioSourceNode | null = null;
+  private ownsAnalyserContext = false;
   startPerfMs = 0;
 
-  constructor(stream: MediaStream) {
+  constructor(stream: MediaStream, sharedContext?: AudioContext) {
     this.mimeType = pickMimeType();
     this.recorder = this.mimeType
       ? new MediaRecorder(stream, { mimeType: this.mimeType })
@@ -78,8 +80,12 @@ export class TurnRecorder {
       };
       const AudioContextCtor = globalWindow.AudioContext ?? globalWindow.webkitAudioContext;
       if (AudioContextCtor) {
-        this.analyserContext = new AudioContextCtor();
+        // Reuse the context resumed by the Start tap. A new context created
+        // after the countdown can stay suspended under mobile autoplay rules.
+        this.analyserContext = sharedContext ?? new AudioContextCtor();
+        this.ownsAnalyserContext = !sharedContext;
         const source = this.analyserContext.createMediaStreamSource(stream);
+        this.analyserSource = source;
         this.analyserNode = this.analyserContext.createAnalyser();
         this.analyserNode.fftSize = 1024;
         source.connect(this.analyserNode);
@@ -110,7 +116,9 @@ export class TurnRecorder {
         () => {
           const stopPerfMs = performance.now();
           const type = this.recorder.mimeType || this.mimeType || "audio/webm";
-          void this.analyserContext?.close();
+          this.analyserSource?.disconnect();
+          this.analyserNode?.disconnect();
+          if (this.ownsAnalyserContext) void this.analyserContext?.close();
           resolve({
             blob: new Blob(this.chunks, { type }),
             mimeType: type,

@@ -257,7 +257,7 @@ export function GameProvider({ children }: { children: ReactNode }): JSX.Element
 
       const buffer = await bufferPromise;
 
-      const recorder = new TurnRecorder(micStreamRef.current);
+      const recorder = new TurnRecorder(micStreamRef.current, engine.audioContext);
       activeRecorderRef.current = recorder;
       setRecorderAnalyser(recorder.getAnalyser());
 

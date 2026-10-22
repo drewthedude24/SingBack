@@ -32,6 +32,10 @@ export class InstrumentalPlayer {
     return this.context.currentTime;
   }
 
+  get audioContext(): AudioContext {
+    return this.context;
+  }
+
   async preload(url: string): Promise<AudioBuffer> {
     const cached = this.buffers.get(url);
     if (cached) return cached;
