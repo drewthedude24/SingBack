@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+from threading import BoundedSemaphore
 from time import perf_counter
 from typing import Callable
 
@@ -28,18 +29,21 @@ class AnalysisService:
         elevenlabs: ElevenLabsService,
         gemini: GeminiFeedbackService,
         reference_path_resolver: Callable[[str], Path],
+        max_workers: int = 4,
     ) -> None:
         self._scoring = scoring
         self._elevenlabs = elevenlabs
         self._gemini = gemini
         self._reference_path_resolver = reference_path_resolver
+        self._max_workers = max(1, min(4, max_workers))
+        self._worker_slots = BoundedSemaphore(self._max_workers)
 
     def analyze_many(
         self, song: SongManifestEntry, artifacts: dict[str, AudioArtifact]
     ) -> dict[str, PerformanceAnalysis]:
         if not artifacts:
             return {}
-        with ThreadPoolExecutor(max_workers=min(4, len(artifacts))) as executor:
+        with ThreadPoolExecutor(max_workers=min(self._max_workers, len(artifacts))) as executor:
             futures = {
                 player_id: executor.submit(self._analyze_one, song, artifact)
                 for player_id, artifact in artifacts.items()
@@ -52,6 +56,13 @@ class AnalysisService:
         )
 
     def _analyze_one(
+        self, song: SongManifestEntry, artifact: AudioArtifact
+    ) -> PerformanceAnalysis:
+        # Share the limit across simultaneous rounds, not only within each pool.
+        with self._worker_slots:
+            return self._analyze_performance(song, artifact)
+
+    def _analyze_performance(
         self, song: SongManifestEntry, artifact: AudioArtifact
     ) -> PerformanceAnalysis:
         analysis_started = perf_counter()

@@ -11,6 +11,9 @@ flat on the second phrase rather than just that you missed a note.
 
 ## Quickstart
 
+For a public HTTPS demo, see [deployment instructions](docs/DEPLOYMENT.md).
+The included Dockerfile serves the game and API together from one URL.
+
 Two terminals, from the repository root.
 
 Backend:

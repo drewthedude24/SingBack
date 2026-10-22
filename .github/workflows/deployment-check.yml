@@ -1,0 +1,50 @@
+name: Deployment checks
+
+on:
+  push:
+    branches: [main, deploy/recruiter-demo]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production container
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: singback:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Verify the game, API and private-file boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --name singback --publish 10000:10000 singback:test
+          ready=false
+          for attempt in {1..45}; do
+            if curl --fail --silent http://127.0.0.1:10000/api/health; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then
+            docker logs singback
+            exit 1
+          fi
+          curl --fail --silent http://127.0.0.1:10000/ | grep -q '<div id="root">'
+          curl --fail --silent http://127.0.0.1:10000/api/songs | python -c 'import json,sys; songs=json.load(sys.stdin); assert len(songs)==5 and all(song["ready"] for song in songs)'
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:10000/.env)" = 404
+      - name: Container logs
+        if: always()
+        run: docker logs singback || true

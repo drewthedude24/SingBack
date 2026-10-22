@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: singback
+    runtime: docker
+    plan: free
+    region: ohio
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: MAX_ANALYSIS_WORKERS
+        value: "1"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: ELEVENLABS_VOICE_ID
+        value: JBFqnCBsd6RMkjVDRZzb
+      - key: ELEVENLABS_TTS_MODEL
+        value: eleven_flash_v2_5
+      - key: ELEVENLABS_SCRIBE_MODEL
+        value: scribe_v2

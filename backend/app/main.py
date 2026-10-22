@@ -33,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         elevenlabs=elevenlabs_service,
         gemini=gemini_service,
         reference_path_resolver=song_catalog.asset_path,
+        max_workers=settings.max_analysis_workers,
     )
     session_service = SessionService(song_catalog, analysis_service)
 
@@ -108,6 +109,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         StaticFiles(directory=settings.narration_media_root),
         name="narration-media",
     )
+    # Register last so API and media routes retain their own validation/errors.
+    # Local development still uses Vite; a production build is served here.
+    if (settings.frontend_dist_root / "index.html").is_file():
+        application.mount(
+            "/",
+            StaticFiles(directory=settings.frontend_dist_root, html=True),
+            name="frontend",
+        )
     return application
 
 
