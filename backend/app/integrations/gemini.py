@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -35,6 +36,26 @@ class GeminiFeedbackService:
         self._api_key = settings.gemini_api_key
         self._model = settings.gemini_model
         self._timeout_ms = round(settings.external_api_timeout_seconds * 1000)
+        self._client = None
+        self._client_lock = threading.Lock()
+
+    def prepare(self) -> None:
+        if self._api_key:
+            self._get_client()
+
+    def _get_client(self):
+        from google import genai
+        from google.genai import types
+        with self._client_lock:
+            if self._client is None:
+                self._client = genai.Client(api_key=self._api_key,
+                    http_options=types.HttpOptions(timeout=self._timeout_ms,
+                        retry_options=types.HttpRetryOptions(attempts=1)))
+            return self._client
+
+    def close(self) -> None:
+        if self._client is not None:
+            self._client.close()
 
     @property
     def configured(self) -> bool:
@@ -52,7 +73,6 @@ class GeminiFeedbackService:
         if not self._api_key:
             return self._fallback(score)
         try:
-            from google import genai
             from google.genai import types
 
             measurements = {
@@ -71,10 +91,7 @@ class GeminiFeedbackService:
                 "than the short phrases already supplied. Measurements:\n"
                 + json.dumps(measurements, separators=(",", ":"))
             )
-            client = genai.Client(
-                api_key=self._api_key,
-                http_options=types.HttpOptions(timeout=self._timeout_ms),
-            )
+            client = self._get_client()
             response = client.models.generate_content(
                 model=self._model,
                 contents=[
@@ -114,7 +131,7 @@ class GeminiFeedbackService:
                 source="gemini",
             )
         except Exception as exc:
-            logger.warning("Gemini feedback unavailable (%s)", type(exc).__name__)
+            logger.warning("Gemini feedback unavailable (%s, status=%s)", type(exc).__name__, getattr(exc, "code", "unknown"))
             return self._fallback(score)
 
     @staticmethod

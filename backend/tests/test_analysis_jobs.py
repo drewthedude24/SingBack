@@ -1,9 +1,19 @@
 import time
+import threading
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from backend.app.scoring.service import ScoringService
+from backend.app.config import Settings
+from backend.app.main import create_app
+from backend.app.integrations.elevenlabs import TranscriptResult
+from backend.app.models import PerformanceEvidence, Score
+from backend.app.services.analysis_service import AnalysisService
+from backend.app.services.audio_service import AudioArtifact
+from backend.app.integrations.gemini import GeminiFeedbackService
+from fastapi.testclient import TestClient
 
 
 def test_reference_features_persist_across_service_instances(tmp_path: Path, monkeypatch):
@@ -47,3 +57,51 @@ def test_grading_starts_after_upload_and_finalize_reuses_job(client, vocal_wav, 
     assert len(submissions) == 1
     assert client.post(prefix + "/finalize").status_code == 200
     assert len(submissions) == 1
+
+
+def test_cpu_slot_is_free_while_another_job_waits_for_feedback():
+    feedback_entered, second_audio = threading.Event(), threading.Event()
+    calls = []
+    def prepare_player(path):
+        calls.append(path)
+        if len(calls) == 2:
+            second_audio.set()
+        return object()
+    def analyze(**kwargs):
+        return SimpleNamespace(score=Score(pitch=100, rhythm=100, lyrics=None, completion=100,
+            technicalTotal=100, scoringProfile="partial_no_lyrics", confidence={}),
+            evidence=PerformanceEvidence(durationMs=10000, referenceWaveform=[0], playerWaveform=[0],
+                referencePitchMidi=[None], playerPitchMidi=[None]))
+    def feedback(**kwargs):
+        if not feedback_entered.is_set():
+            feedback_entered.set()
+            assert second_audio.wait(5), "Cloud feedback must not hold the CPU semaphore"
+        return GeminiFeedbackService._fallback(kwargs["score"])
+    service = AnalysisService(
+        scoring=SimpleNamespace(prepare_player=prepare_player, prepare_reference=lambda _: object(), analyze=analyze),
+        elevenlabs=SimpleNamespace(transcribe=lambda _: TranscriptResult(None, [], "unavailable")),
+        gemini=SimpleNamespace(feedback=feedback), reference_path_resolver=Path, max_workers=1)
+    song = SimpleNamespace(reference_vocal_path="reference.wav", expected_lyrics="test")
+    artifact = AudioArtifact(10000, 0, False, "/mix.mp3", Path("player.wav"))
+    try:
+        first = service.submit(song, artifact)
+        assert feedback_entered.wait(5)
+        second = service.submit(song, artifact)
+        first.future.result(timeout=5)
+        second.future.result(timeout=5)
+        assert first.progress()["percent"] == second.progress()["percent"] == 100
+    finally:
+        second_audio.set()
+        service.close()
+
+
+def test_runtime_warmup_does_not_make_provider_calls(tmp_path, monkeypatch):
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Warmup must not call external providers")
+    from backend.app.integrations.elevenlabs import ElevenLabsService
+    monkeypatch.setattr(ElevenLabsService, "transcribe", forbidden)
+    monkeypatch.setattr(GeminiFeedbackService, "feedback", forbidden)
+    settings = Settings(runtime_root=tmp_path / "runtime", warm_audio_runtime=True,
+                        gemini_api_key=None, elevenlabs_api_key=None)
+    with TestClient(create_app(settings)) as test_client:
+        assert test_client.get("/api/health").status_code == 200

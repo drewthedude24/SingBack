@@ -11,6 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PORT=10000 \
     MAX_ANALYSIS_WORKERS=1 \
+    WARM_AUDIO_RUNTIME=1 \
     NUMBA_CPU_NAME=generic \
     NUMBA_CACHE_DIR=/app/.cache/numba \
     REFERENCE_CACHE_DIR=/app/.cache/references \

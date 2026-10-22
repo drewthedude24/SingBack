@@ -50,6 +50,12 @@ Progress reflects completed stages: started 5%, signal features 60%, transcript
 20%, feedback 15%. The percentages are work-stage weights, **not elapsed-time
 predictions**. Both online and pass-and-play expose this actual stage progress.
 
+The Docker runtime also loads the audio/JIT libraries before readiness using a
+public fixture, without making any provider requests. Provider HTTP clients are
+reused and closed after jobs drain at shutdown. Gemini makes one bounded request
+per take instead of silently retrying server errors; failure keeps measured
+scores and uses explicitly labeled fallback coaching.
+
 Immutable reference audio/pitch/onsets are generated for every song during the
 Docker build. Cache keys include the file contents and scoring version. NumPy
 loads cached data without pickle; invalid/missing data is recalculated. Player

@@ -44,8 +44,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_):
+        if settings.warm_audio_runtime:
+            ready = [song for song in song_catalog.all_public() if song.ready]
+            if ready:
+                await run_in_threadpool(analysis_service.warm_runtime, song_catalog.get(ready[0].id))
         yield
         await run_in_threadpool(analysis_service.close)
+        elevenlabs_service.close()
+        gemini_service.close()
 
     application = FastAPI(title="SingBack API", version="0.2.0", lifespan=lifespan)
     application.state.settings = settings

@@ -19,15 +19,18 @@ keys enable the existing local fallbacks.
 The free deployment uses `MAX_ANALYSIS_WORKERS=1` to bound memory consumption
 across rounds. The local default remains four. The container prepares Numba's
 disk cache for pitch, rhythm and DTW during its build, using portable CPU code
-so the build cache also works on Render's runtime servers. It uses system
+so the build cache also works on Render's runtime servers. It also builds cached
+reference features for every song. Cloud transcription runs alongside audio
+analysis; feedback does not occupy the CPU slot. It uses system
 FFmpeg. Demucs is not needed at
 runtime because all five song stems are included.
 
 Free Render instances sleep after inactivity, so the first visit may show a
 startup page for about a minute. Sessions and generated recordings are temporary
-and reset when the service restarts or sleeps. This is a pass-and-play demo on
-one device, not a synchronized room across multiple devices. Use HTTPS and allow
-microphone access. Chrome or Edge on a laptop is the recommended demo setup.
+and reset when the service restarts or sleeps. Online rooms support 2–4 devices
+with invitation links and room codes; pass-and-play supports 1–4 players on one
+device. Use HTTPS and allow microphone access. Safari or Chrome on phones and
+Chrome or Edge on computers support the required browser APIs. Use headphones.
 
 ## Verify a deployment
 
@@ -37,6 +40,14 @@ microphone access. Chrome or Edge on a laptop is the recommended demo setup.
 4. Verify the remix plays and waveform, scores, and coaching appear.
 5. With provider keys configured, verify narration has audio and results report
    the actual feedback/transcription source rather than just key presence.
+6. Create an online room, join from another device, ready both microphones,
+   listen, and record each turn. Check shared results and a rematch.
+
+Automated independent-client verification using only public song fixtures:
+
+```bash
+python -m backend.scripts.verify_online_deployment https://singback.onrender.com --players 4
+```
 
 ## Local production preview
 
@@ -59,6 +70,7 @@ The exact remote code before deployment preparation is
 `9db84ee81c723362ad51461803ae2acfb4cff558`, preserved by the Git tag
 `pre-recruiter-deploy-20261022`. Revert the deployment commit(s) with `git revert`
 and push to `main` to undo this work without overwriting other contributions.
-Render automatically deploys changes to its tracked branch; reverting the code
-does not itself delete the hosted service. Suspend the service in Render if the
+Git-provider-linked services can auto-deploy tracked-branch changes. A service
+created from a public Git URL needs a manual deploy after pushing. Reverting the
+code does not itself delete the hosted service. Suspend the service in Render if the
 deployment should be taken offline.

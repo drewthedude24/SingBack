@@ -106,6 +106,10 @@ Scribe runs alongside signal extraction; Gemini requests do not hold the local
 CPU slot. Earlier players are analyzed during later turns, not all at the end.
 The free service limits simultaneous local DSP to one job to stay inside memory
 limits. Progress represents completed analysis stages, not elapsed-time guesses.
+The container warms lazy audio libraries before it becomes ready and reuses
+provider HTTP connections. This keeps one-time initialization out of a visitor's
+first grade. Provider failures still use labeled fallbacks; there is no hidden
+multi-attempt Gemini retry loop holding up results.
 
 Reproduce the local old/new analysis comparison with:
 

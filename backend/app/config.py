@@ -16,6 +16,7 @@ class Settings:
     max_analysis_workers: int = field(
         default_factory=lambda: max(1, min(4, int(os.getenv("MAX_ANALYSIS_WORKERS", "4"))))
     )
+    warm_audio_runtime: bool = field(default_factory=lambda: os.getenv("WARM_AUDIO_RUNTIME", "0") == "1")
     ffmpeg_bin: str | None = field(default_factory=lambda: os.getenv("FFMPEG_BIN"))
     gemini_api_key: str | None = field(
         default_factory=lambda: os.getenv("GEMINI_API_KEY") or None

@@ -91,6 +91,20 @@ class AnalysisService:
             self._reference_path_resolver(song.reference_vocal_path)
         )
 
+    def warm_runtime(self, song: SongManifestEntry) -> None:
+        """Load lazy DSP/JIT modules before readiness, using only public audio.
+
+        Compiled disk caches avoid compilation, not Python/Numba module import.
+        This moves that one-time boot cost out of the first visitor's grade.
+        No transcription or generation request is made by this warmup.
+        """
+        path = self._reference_path_resolver(song.reference_vocal_path)
+        self._scoring.analyze(reference_vocal_path=path, player_vocal_path=path,
+            expected_lyrics=song.expected_lyrics, detected_lyrics=song.expected_lyrics,
+            transcript_source="elevenlabs")
+        self._elevenlabs.prepare()
+        self._gemini.prepare()
+
     def _analyze_performance(
         self, song: SongManifestEntry, artifact: AudioArtifact, job: AnalysisJob
     ) -> PerformanceAnalysis:

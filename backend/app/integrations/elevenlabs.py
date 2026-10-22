@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import hashlib
+import logging
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
 
 from backend.app.config import Settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -30,6 +34,22 @@ class ElevenLabsService:
         self._api_key = settings.elevenlabs_api_key
         self._voice_id = settings.elevenlabs_voice_id
         settings.narration_media_root.mkdir(parents=True, exist_ok=True)
+        self._client: httpx.Client | None = None
+        self._client_lock = threading.Lock()
+
+    def prepare(self) -> None:
+        if self._api_key:
+            self._get_client()
+
+    def _get_client(self) -> httpx.Client:
+        with self._client_lock:
+            if self._client is None:
+                self._client = httpx.Client(timeout=self._settings.external_api_timeout_seconds)
+            return self._client
+
+    def close(self) -> None:
+        if self._client is not None:
+            self._client.close()
 
     @property
     def configured(self) -> bool:
@@ -39,9 +59,8 @@ class ElevenLabsService:
         if not self._api_key:
             return TranscriptResult(text=None, words=[], source="unavailable")
         try:
-            with audio_path.open("rb") as audio_file, httpx.Client(
-                timeout=self._settings.external_api_timeout_seconds
-            ) as client:
+            with audio_path.open("rb") as audio_file:
+                client = self._get_client()
                 response = client.post(
                     "https://api.elevenlabs.io/v1/speech-to-text",
                     headers={"xi-api-key": self._api_key},
@@ -65,7 +84,9 @@ class ElevenLabsService:
             ]
             text = str(payload.get("text", "")).strip() or None
             return TranscriptResult(text=text, words=words, source="elevenlabs")
-        except (OSError, ValueError, TypeError, httpx.HTTPError):
+        except (OSError, ValueError, TypeError, httpx.HTTPError) as exc:
+            status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else type(exc).__name__
+            logger.warning("Scribe transcription unavailable (%s)", status)
             return TranscriptResult(text=None, words=[], source="unavailable")
 
     def narrate(self, text: str) -> NarrationResult:
@@ -79,10 +100,7 @@ class ElevenLabsService:
         if destination.is_file() and destination.stat().st_size > 1_000:
             return NarrationResult(audio_url=audio_url, source="elevenlabs")
         try:
-            with httpx.Client(
-                timeout=self._settings.external_api_timeout_seconds
-            ) as client:
-                response = client.post(
+            response = self._get_client().post(
                     f"https://api.elevenlabs.io/v1/text-to-speech/{self._voice_id}",
                     params={"output_format": "mp3_44100_128"},
                     headers={
@@ -100,7 +118,7 @@ class ElevenLabsService:
                         },
                     },
                 )
-                response.raise_for_status()
+            response.raise_for_status()
             if len(response.content) <= 1_000:
                 return NarrationResult(audio_url=None, source="fallback")
             destination.write_bytes(response.content)
